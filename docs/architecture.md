@@ -136,6 +136,35 @@ Every module URL carries a build-specific query, rewritten server-side. A plugin
 produces different URLs and cannot be served from a stale cache, which is what makes a 24-hour
 `Cache-Control` safe on the client modules.
 
+## Packaging
+
+Two files carry almost the same fields in deliberately different shapes, and confusing them is the
+easiest way to ship a plugin that installs and then misbehaves.
+
+| | `manifest.json` | `meta.json` |
+|---|---|---|
+| Lives | `gh-pages` branch, and the repository root | Inside the release zip |
+| Shape | An **array** of plugins, each with a **list** of versions | One **flat object**: one plugin, one version |
+| Read by | Jellyfin, to decide what a repository offers | `PluginManager`, to reconcile the installed package |
+| Carries `sourceUrl` and `checksum` | Yes — that is how the artifact is found and verified | No — it travels *inside* the artifact, so it would point at itself |
+
+A version entry also needs `targetAbi`. Jellyfin filters the catalog by it, and a version without one
+is not offered at all — silently, which is indistinguishable from a repository that was never added.
+
+`GET /Packages` reads each installed plugin's local `meta.json` off disk. Shipping the array form
+installs the plugin, reports success in the dashboard, and then logs a deserialization error on every
+start; a `meta.json` that is missing entirely makes the whole endpoint fail with a 404. Both were
+found by installing from the repository and reading the server log, not by looking at the dashboard,
+which reported success either way.
+
+The release workflow therefore generates both, and the checksum — which cannot be known before the zip
+exists — is written into `manifest.json` by the workflow rather than by hand:
+
+```
+tools/build-package-meta.py <version>            manifest.json -> the zip's meta.json
+tools/set-manifest-release.py <version> <md5>    manifest.json -> sourceUrl and checksum
+```
+
 ## Testing
 
 `tools/check-client.mjs` runs every module against a DOM shim with real selector matching, because
