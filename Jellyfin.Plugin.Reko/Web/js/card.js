@@ -38,7 +38,7 @@ const CARD_ATTR = 'data-reko-card';
  * @param {Object} card The card payload.
  * @returns {Array<{kind: string, text: string}>} The badges.
  */
-export function badgesFor(card) {
+function badgesFor(card) {
     const badges = [];
 
     if (card.inLibrary) {

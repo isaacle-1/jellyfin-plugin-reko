@@ -668,7 +668,7 @@ const expected = {
     api: ['bootstrap', 'home', 'rail', 'title', 'season', 'person', 'search', 'browse', 'seerrStatus', 'seerrRequest', 'seerrStates', 'messageOf'],
     router: ['parse', 'build', 'navigate', 'replace', 'TAB_HASH', 'DEFAULT_TAB_INDEX'],
     inject: ['ensure', 'panel', 'currentTabIndex', 'hasTabButton', 'selectTab'],
-    card: ['createCard', 'badgesFor'],
+    card: ['createCard'],
     chrome: ['watchChrome'],
     rail: ['createRail', 'createRailPlaceholder', 'hydrateRail'],
     hero: ['createHero'],
@@ -721,7 +721,6 @@ try {
     card.createCard(sample, {}, {});
     rail.createRail({ id: 'r', title: 'R', items: [sample] }, {}, {});
     hero.createHero([sample], { heroSeconds: 5 }, {});
-    check('badgesFor is callable', Array.isArray(card.badgesFor(sample)));
 
     // The rank is a flex sibling of the poster, not an absolutely positioned overlay. The
     // difference is invisible in a unit test and obvious on screen: a number drawn to the left of a
