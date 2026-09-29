@@ -111,8 +111,13 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Copied out before the checkout: gh-pages holds the manifest and nothing else, so
+          # switching to it replaces the working tree and takes the script being run with it.
+          cp -r tools "$RUNNER_TEMP/reko-tools"
+
           git fetch origin gh-pages
           git checkout gh-pages
-          python3 tools/set-manifest-release.py "$VERSION" "$MD5"
+          python3 "$RUNNER_TEMP/reko-tools/set-manifest-release.py" "$VERSION" "$MD5"
           git commit -am "Publish Reko $VERSION"
           git push origin gh-pages
