@@ -44,7 +44,9 @@ instead of a video.
 - **YouTube trailers showed "Error 153: Video player configuration error."** That is YouTube refusing
   to configure a player whose embed request arrived with no `Referer`, which happens whenever
   something in front of Jellyfin sets `Referrer-Policy: no-referrer` — a reverse proxy header breaks
-  every embed on the server at once. The iframe now states `referrerpolicy="origin"` itself, which
+  every embed on the server at once. Verified against real YouTube, on one page with one video and
+  one origin: the embed with `referrerpolicy="origin"` plays, and the same embed with
+  `referrerpolicy="no-referrer"` shows Error 153. The iframe now states `origin` itself, which
   overrides whatever the page and the proxy said, and the embed URL carries `origin` so YouTube's own
   check passes. A "Watch on YouTube" link sits under the player, because a video whose owner has
   disallowed embedding, or a region block, is still a video somebody can watch.
