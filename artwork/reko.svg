@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Reko">
+  <title>Reko</title>
+  <rect x="4" y="4" width="248" height="248" rx="48" fill="#141414"/>
+  <rect x="36" y="66" width="184" height="124" rx="20" fill="none" stroke="#e50914" stroke-width="13"/>
+  <path d="M110 100v56l48-28z" fill="#e50914"/>
+</svg>
