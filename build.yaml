@@ -13,7 +13,7 @@ description: >
   for "In library" badges, one-click playback, continue watching and personalisation.
 
   Features include a rotating hero billboard, horizontally scrolling rails, ranked Top 10 rows, curated
-  genre rails, hover previews, instant search and full title pages with seasons, episodes, cast, trailers
+  genre rails, instant search and full title pages with seasons, episodes, cast, trailers
   and watch providers. Requests are routed through Overseerr or Jellyseerr with a season picker and live
   request status.
 

@@ -167,10 +167,6 @@ public sealed class RekoClientConfig
     [JsonPropertyName("enableSearch")]
     public bool EnableSearch { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether cards show a hover preview.</summary>
-    [JsonPropertyName("enableHoverPreviews")]
-    public bool EnableHoverPreviews { get; set; }
-
     /// <summary>Gets or sets a value indicating whether watch providers are shown.</summary>
     [JsonPropertyName("showWatchProviders")]
     public bool ShowWatchProviders { get; set; }

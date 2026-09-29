@@ -10,7 +10,6 @@
  */
 
 import { el, empty, metaLine } from './utils.js';
-import { hidePreview } from './card.js';
 
 const BADGE_LABELS = {
     'request-pending': 'Requested',
@@ -89,7 +88,6 @@ export function createHero(items, config, actions) {
             on: {
                 click: () => {
                     stop();
-                    hidePreview();
                     actions.onPlay?.(card);
                 }
             }
@@ -100,7 +98,6 @@ export function createHero(items, config, actions) {
             on: {
                 click: () => {
                     stop();
-                    hidePreview();
                     actions.onRequest?.(card);
                 }
             }
@@ -151,7 +148,6 @@ export function createHero(items, config, actions) {
                     on: {
                         click: () => {
                             stop();
-                            hidePreview();
                             actions.onOpen?.(card);
                         }
                     }

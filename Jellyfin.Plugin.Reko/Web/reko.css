@@ -28,6 +28,12 @@
     min-height: 60vh;
     color: var(--reko-text);
     font-family: inherit;
+
+    /* How tall Jellyfin's own header is, published by chrome.js. It is the sticky header's top
+       offset: Jellyfin's bar is fixed and z-indexed at 1100, so a Reko header sticking at 0 slides
+       underneath it and disappears as soon as the page scrolls. The fallback is the Modern layout's
+       48px app bar, which is the one layout where chrome.js might not have run yet. */
+    --reko-chrome-h: 48px;
 }
 
 /* Light themes need the opposite surfaces, so the variables are re-pointed rather than every rule
@@ -73,18 +79,25 @@
 
 .rekoHeader {
     position: sticky;
-    top: 0;
+
+    /* Below Jellyfin's header, not behind it. See --reko-chrome-h on .rekoApp. */
+    top: var(--reko-chrome-h, 48px);
     z-index: 4;
     display: flex;
     align-items: center;
     gap: 1em;
     padding: 0.9em 4vw;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent);
+
+    /* Opaque rather than a gradient. A gradient reads as a fade-out against an opaque app bar, so
+       the title and the search field look half-erased for as long as they are stuck to it. */
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 0 var(--reko-border);
 }
 
 .skinLight .rekoHeader,
 [data-theme='light'] .rekoHeader {
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.92), transparent);
+    background: rgba(246, 246, 246, 0.94);
 }
 
 .rekoHeaderTitle {
@@ -583,88 +596,6 @@
 }
 
 /* -------------------------------------------------------------------------------------------- */
-/* Hover preview                                                                                  */
-/* -------------------------------------------------------------------------------------------- */
-
-.rekoPreview {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 3000;
-    display: none;
-    width: 22em;
-    max-width: 92vw;
-    overflow: hidden;
-    border: 1px solid var(--reko-border);
-    border-radius: 10px;
-    background: var(--reko-surface-solid);
-    box-shadow: var(--reko-shadow);
-}
-
-.rekoPreview.is-open {
-    display: block;
-}
-
-.rekoPreviewArt {
-    aspect-ratio: 16 / 9;
-    background-position: center;
-    background-size: cover;
-}
-
-.rekoPreviewBody {
-    padding: 0.85em 1em 1em;
-}
-
-.rekoPreviewTitle {
-    margin-bottom: 0.3em;
-    font-size: 1.05em;
-    font-weight: 700;
-}
-
-.rekoPreviewMeta {
-    margin-bottom: 0.5em;
-    color: var(--reko-text-faint);
-    font-size: 0.82em;
-}
-
-.rekoPreviewOverview {
-    display: -webkit-box;
-    margin: 0 0 0.6em;
-    overflow: hidden;
-    color: var(--reko-text-dim);
-    font-size: 0.86em;
-    line-height: 1.5;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
-}
-
-.rekoPreviewGenres {
-    margin-bottom: 0.6em;
-    color: var(--reko-text-faint);
-    font-size: 0.8em;
-}
-
-.rekoPreviewBadges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3em;
-    margin-bottom: 0.7em;
-}
-
-.rekoPreviewActions {
-    display: flex;
-    gap: 0.5em;
-}
-
-.rekoPreviewAction {
-    padding: 0.35em 0.8em;
-    border: 1px solid var(--reko-border);
-    border-radius: 4px;
-    font-size: 0.8em;
-    font-weight: 600;
-}
-
-/* -------------------------------------------------------------------------------------------- */
 /* Title page                                                                                     */
 /* -------------------------------------------------------------------------------------------- */
 
@@ -850,10 +781,26 @@
     aspect-ratio: 16 / 9;
     overflow: hidden;
     border-radius: 10px;
-    background: #000;
+    background: #0b0b0b;
+}
+
+/* The title's own backdrop, so the section reads as the trailer before anything is clicked. */
+.rekoTrailerPoster {
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-size: cover;
+}
+
+.rekoTrailerPoster::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent 60%);
 }
 
 .rekoTrailerFrame {
+    position: relative;
     width: 100%;
     height: 100%;
     border: 0;
@@ -863,16 +810,20 @@
     position: absolute;
     inset: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 0.6em;
     width: 100%;
     border: 0;
     background: rgba(0, 0, 0, 0.28);
     color: #fff;
     cursor: pointer;
+    transition: background 150ms ease;
 }
 
-.rekoTrailerPlay:hover {
+.rekoTrailerPlay:hover,
+.rekoTrailerPlay:focus-visible {
     background: rgba(0, 0, 0, 0.16);
 }
 
@@ -880,11 +831,36 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 4.2em;
-    height: 4.2em;
+    width: 4.6em;
+    height: 4.6em;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.65);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     font-size: 1.6em;
+}
+
+.rekoTrailerPlayText {
+    font-size: 0.95em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+.rekoTrailerFoot {
+    margin-top: 0.6em;
+}
+
+.rekoTrailerLink {
+    color: var(--reko-text-dim);
+    font-size: 0.85em;
+    text-decoration: none;
+}
+
+.rekoTrailerLink:hover,
+.rekoTrailerLink:focus-visible {
+    color: var(--reko-text);
+    text-decoration: underline;
 }
 
 /* Seasons */
@@ -1385,8 +1361,7 @@
 @media (prefers-reduced-motion: reduce) {
     .rekoCard,
     .rekoHeroDot,
-    .rekoButton,
-    .rekoPreview {
+    .rekoButton {
         transition: none;
     }
 

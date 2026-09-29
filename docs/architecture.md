@@ -74,10 +74,11 @@ Web/
 ├── reko.css        every rule namespaced under .reko*
 └── js/
     ├── inject.js   puts the tab and its panel into jellyfin-web's DOM
+    ├── chrome.js   keeps Reko's sticky header clear of Jellyfin's
     ├── router.js   Reko's views, as query parameters on Jellyfin's own route
     ├── app.js      view switching and the handlers shared by every view
     ├── api.js      the /Reko/* client
-    ├── card.js     the poster card, badges, hover preview
+    ├── card.js     the poster card and its badges
     ├── rail.js     a row of cards, with arrows and lazy hydration
     ├── hero.js     the rotating billboard
     ├── detail.js   title and person pages
@@ -129,6 +130,27 @@ the same mechanism with no extra machinery.
 `early.js` runs during parsing, before jellyfin-web's deferred bundles create the router, and removes
 a `?tab=N` that no button backs yet, stashing it for Reko to re-apply. Without that, the router
 selects a tab that does not exist and the deep link lands on Home.
+
+### Living inside Jellyfin's header
+
+Jellyfin's header is `position: fixed` and opaque once the page scrolls. Reko's is `position: sticky`
+inside the scroll container. Both stick to the top of the viewport, so whichever the browser resolves
+last wins, and Jellyfin's sits at `z-index: 1100` against Reko's 4 — scrolling pushes the Reko title
+and the search field underneath it and they vanish.
+
+CSS cannot measure a sibling, so `chrome.js` measures the visible header — `.MuiAppBar-root` on the
+Modern layout, `.skinHeader` on the Legacy and TV layouts, of which only one is ever on screen — and
+publishes the height as `--reko-chrome-h`, which the stylesheet uses as the sticky `top`. It writes to
+every Reko root in the document, because Jellyfin keeps the previous home page mounted behind the one
+on screen and there are routinely two.
+
+### The custom property scope
+
+Every rule in `reko.css` reads a custom property declared on `.rekoApp`: `--reko-text`, `--reko-accent`,
+`--reko-border` and the rest. Anything mounted *beside* that element resolves none of them and renders
+with every colour falling back to Jellyfin's inherited values. On a dark theme those are close enough
+to Reko's own palette to look correct, so the bug hides completely until somebody switches to a light
+theme. Views are therefore mounted inside the root, which survives re-renders.
 
 ### Caching on the client
 
@@ -183,7 +205,8 @@ TMDB below had been written from the same misreading. A fake agreeing with a fak
 **`tools/check-client.mjs`** runs every browser module against a DOM shim with real selector
 matching, because `inject.js` is nothing but selector matching and a stub that answers `null` to
 everything cannot tell a working injector from a broken one. It covers both layouts' markup, the
-router's URL grammar, and the ranked card's structure.
+router's URL grammar, the ranked card's structure, and that a view is mounted inside `.rekoApp`
+rather than beside it.
 
 **`tools/mock-services.js`** serves a fake TMDB and a fake Seerr, so the whole plugin can be exercised
 end to end on a real Jellyfin 12.1 with no credentials and no outbound network. Its response shapes

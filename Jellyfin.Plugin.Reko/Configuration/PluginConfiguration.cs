@@ -34,7 +34,6 @@ public class PluginConfiguration : BasePluginConfiguration
         EnableContinueWatching = true;
         EnablePersonalizedRows = true;
         EnableSearch = true;
-        EnableHoverPreviews = true;
         ShowWatchProviders = true;
         ShowTrailers = true;
         ShowCast = true;
@@ -163,11 +162,6 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets a value indicating whether the in-tab search is enabled.
     /// </summary>
     public bool EnableSearch { get; set; }
-
-    /// <summary>
-    /// Gets or sets a value indicating whether cards show a hover preview.
-    /// </summary>
-    public bool EnableHoverPreviews { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether watch providers are shown on title pages.

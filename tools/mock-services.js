@@ -729,8 +729,25 @@ function handleSeerr(req, path, q, res) {
                 return send(res, 400, { message: 'validation failed' });
             }
 
+            // Overseerr runs express-openapi-validator with validateRequests, and `seasons` is a
+            // oneOf of array, string and the literal "all". A JSON null matches none of the three,
+            // so it is rejected before the route ever runs. Transcribed from the validator's own
+            // wording, because the plugin shipped `seasons: null` on every movie request and the
+            // permissive version of this mock was perfectly happy to accept it.
+            if ('seasons' in parsed) {
+                const valid = Array.isArray(parsed.seasons)
+                    || typeof parsed.seasons === 'string'
+                    || parsed.seasons === 'all';
+
+                if (!valid) {
+                    return send(res, 400, {
+                        message: 'request/body/seasons must be array, request/body/seasons must be string, request/body/seasons must be equal to one of the allowed values: all, request/body/seasons must match exactly one schema in oneOf'
+                    });
+                }
+            }
+
             const key = `${parsed.mediaType}:${parsed.mediaId}`;
-            const seasons = (parsed.seasons ?? []).map((seasonNumber) => ({ seasonNumber, status: 5 }));
+            const seasons = (Array.isArray(parsed.seasons) ? parsed.seasons : []).map((seasonNumber) => ({ seasonNumber, status: 5 }));
 
             if (SEERR_REQUESTS.has(key)) {
                 return send(res, 409, { message: 'Request for this media already exists.' });

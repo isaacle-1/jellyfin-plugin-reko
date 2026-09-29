@@ -4,6 +4,49 @@ All notable changes to Reko are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Reko uses
 [semantic versioning](https://semver.org/spec/v2.0.0.html) on the four-part Jellyfin version.
 
+## [1.0.2] — 2026-09-29
+
+Found by a real server's log and a real scrolled page. The tab's header was sliding under Jellyfin's
+own, every movie request was being rejected by Overseerr, and YouTube trailers played an error code
+instead of a video.
+
+### Fixed
+
+- **The Reko header and search box disappeared as soon as you scrolled.** Jellyfin's header is
+  `position: fixed` and opaque; Reko's is `position: sticky` in the scroll container. Both stick to the
+  top, and Jellyfin's is at `z-index: 1100` against Reko's 4, so scrolling pushed Reko's underneath it.
+  A new `chrome.js` measures whichever header the current layout uses and publishes the height as a
+  custom property the stylesheet sticks to, in both the Modern and the Legacy and TV layouts.
+- **Every movie request failed with an Overseerr validation error.** The body sent `seasons: null` for
+  a movie; Overseerr's `seasons` is a `oneOf` of array, string and `"all"`, and `null` matches none of
+  them, so the request was rejected before it reached the route. The property is now omitted entirely
+  when there are no seasons. `tools/mock-services.js` accepted the null happily, which is how it
+  shipped; it now rejects it the way Overseerr does.
+- **YouTube trailers showed "Error 153: Video player configuration error."** That is YouTube refusing
+  to configure a player whose embed request arrived with no `Referer`, which happens whenever
+  something in front of Jellyfin sets `Referrer-Policy: no-referrer` — a reverse proxy header breaks
+  every embed on the server at once. The iframe now states `referrerpolicy="origin"` itself, which
+  overrides whatever the page and the proxy said, and the embed URL carries `origin` so YouTube's own
+  check passes. A "Watch on YouTube" link sits under the player, because a video whose owner has
+  disallowed embedding, or a region block, is still a video somebody can watch.
+- **Reko's colour variables did not reach its own content.** Views were mounted beside Reko's
+  application root rather than inside it, so `--reko-text`, `--reko-accent` and `--reko-border`
+  resolved to nothing and every colour fell back to Jellyfin's inherited value. On a dark theme that
+  is close enough to look fine, which is why it went unnoticed; on a light theme it is white text on a
+  white page. It also meant the search field had no border and no background of its own.
+- **`tools/check-client.mjs` took thirty seconds to exit.** Importing `client.js` starts its poller
+  for the Jellyfin API client, and nothing unref'd it, so every CI run finished its checks and then sat
+  there until the poller gave up. It now looks exactly like a hung build.
+
+### Changed
+
+- **Hover previews are gone.** They covered the row being read, rebuilt on every pointer move across a
+  rail, and showed the title, year, certification, synopsis and badges that are either already on the
+  card or one click away on the title page. The "Show a preview when hovering a card" setting has been
+  removed with them.
+- **The trailer has a poster.** It used to be a black rectangle with a small triangle in it; it is now
+  the title's own backdrop with a centred play button and a label.
+
 ## [1.0.1] — 2026-09-29
 
 Fixes the certifications on every movie and series, and the retry storm that was amplifying the
@@ -49,8 +92,6 @@ Initial release.
 - A rotating hero billboard using TMDB logo artwork, with a typeset title where a title has no logo.
 - Horizontal rails with scroll snapping, hover arrows and lazy hydration: trending, popular, ranked
   Top 10 today and this week, and curated genre and theme rows.
-- Hover previews on every card, showing backdrop, facts, synopsis, library and request badges, and
-  the actions available for that title.
 - Instant search across movies, series and people, reachable from the header on every view.
 - Title pages with logo, tagline, overview, genres, network, trailer, where-to-watch providers, the
   full season and episode list, and cast.

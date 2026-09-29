@@ -18,8 +18,6 @@ and to build rows out of what you have been watching.
 - **Horizontal rails** — Trending, Popular, Top 10, curated genres, and rows built from your own
   viewing history — that scroll and snap, with arrows on hover.
 - **Ranked Top 10 rows**, numbered the way Netflix numbers them.
-- **Hover previews** on every card: backdrop, facts, synopsis, badges, and the actions available for
-  that title.
 - **Instant search** across movies, series and people, reachable from the header on every view.
 - **Title pages** with the logo, tagline, overview, genres, network, trailer, where-to-watch
   providers, the full season and episode list, and the cast.
@@ -66,7 +64,7 @@ Everything is under **Dashboard ▸ Plugins ▸ Reko**.
 | **Tab label** | The text on the tab. Defaults to `Reko`. |
 | **Hero titles** | How many titles in the rotating billboard, and how long each one stays. |
 | **Items per row** | How many cards each rail requests. |
-| **Hover previews**, **Instant search** | On or off. |
+| **Instant search** | On or off. |
 | **Continue watching**, **Personalised rows** | Build rows from your own playback history. Personalised rows need at least a few watched items before they appear. |
 | **Minimum watched for personalised rows** | How much history Reko needs before it will build rows about your taste. |
 | **Cache lifetimes** | How long rails, trending, title pages and the computed taste profile are held. Longer is faster and staler. |

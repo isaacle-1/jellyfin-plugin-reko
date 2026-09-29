@@ -124,7 +124,7 @@ export async function createTitlePage(id, type, config, actions, initialSeason =
     root.appendChild(columns);
 
     if (config.showTrailers && payload.trailerKey) {
-        main.appendChild(buildTrailer(payload.trailerKey, card.title));
+        main.appendChild(buildTrailer(payload.trailerKey, card));
     }
 
     if (type === 'tv' && payload.seasons?.length) {
@@ -435,43 +435,105 @@ function buildFacts(card) {
 }
 
 /**
- * Builds the trailer embed.
+ * Builds the trailer section.
  *
- * The embed is created on demand rather than up front, because a YouTube iframe pulls a third-party
- * script bundle and most people never press play on it.
+ * The player is created on demand rather than up front, because a YouTube iframe pulls a
+ * third-party script bundle and most people never press play on it. The poster behind it is the
+ * title's own backdrop, so the section is recognisable before anything is clicked and is not a
+ * black rectangle in the middle of the page.
  *
  * @param {string} key The YouTube video key.
- * @param {string} title The title, for the accessible name.
+ * @param {Object} card The card payload, for the poster and the accessible name.
  * @returns {HTMLElement} The section.
  */
-function buildTrailer(key, title) {
+function buildTrailer(key, card) {
+    const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(key)}`;
     const host = el('div.rekoTrailer');
-    const button = el('button.rekoTrailerPlay', {
-        type: 'button',
-        attrs: { 'aria-label': `Play trailer for ${title}` },
-        on: {
-            click: () => {
-                host.replaceChildren(
-                    el('iframe.rekoTrailerFrame', {
-                        src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(key)}?autoplay=1&rel=0`,
-                        title: `${title} trailer`,
-                        attrs: {
-                            allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture',
-                            allowfullscreen: '',
-                            loading: 'lazy'
-                        }
-                    })
-                );
-            }
-        }
-    }, [el('span.rekoTrailerGlyph', { text: '▶' })]);
 
-    host.appendChild(button);
+    if (card.backdrop) {
+        host.appendChild(
+            el('div.rekoTrailerPoster', { style: { backgroundImage: `url("${card.backdrop}")` } })
+        );
+    }
+
+    /**
+     * Swaps the poster for the player.
+     */
+    const play = () => {
+        host.replaceChildren(
+            el('iframe.rekoTrailerFrame', {
+                src: embedUrl(key),
+                title: `${card.title} trailer`,
+                attrs: {
+                    allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture',
+                    allowfullscreen: '',
+
+                    // YouTube refuses to configure a player whose embed request arrives with no
+                    // Referer, and says so with "Error 153: Video player configuration error". The
+                    // policy is normally inherited from the page, but Jellyfin is very often served
+                    // through a reverse proxy that sets `Referrer-Policy: no-referrer` — which strips
+                    // the header and breaks every embed on the server at once. Stating `origin` on
+                    // the element overrides whatever the page and the proxy said, so the header is
+                    // sent either way.
+                    referrerpolicy: 'origin',
+
+                    loading: 'lazy'
+                }
+            })
+        );
+    };
+
+    host.appendChild(
+        el('button.rekoTrailerPlay', {
+            type: 'button',
+            attrs: { 'aria-label': `Play the trailer for ${card.title}` },
+            on: { click: play }
+        }, [
+            el('span.rekoTrailerGlyph', {
+                attrs: { 'aria-hidden': 'true' },
+                text: '▶'
+            }),
+            el('span.rekoTrailerPlayText', { text: 'Play trailer' })
+        ])
+    );
 
     return el('section.rekoTrailerSection', null, [
         el('h2.rekoSectionTitle', { text: 'Trailer' }),
-        host
+        host,
+
+        // Not decoration. Embedding a YouTube player is something YouTube is entitled to refuse —
+        // by region, by age gate, by a video whose owner has since disallowed embedding — and when
+        // it does, the page shows nothing but an error code. A link always works.
+        el('div.rekoTrailerFoot', null, [
+            el('a.rekoTrailerLink', {
+                text: 'Watch on YouTube',
+                attrs: { href: watchUrl, target: '_blank', rel: 'noopener noreferrer' }
+            })
+        ])
     ]);
+}
+
+/**
+ * The embed URL for a YouTube video.
+ *
+ * `origin` is what YouTube uses to decide whether the player is allowed to run, and it has to match
+ * the page exactly or the player refuses. `window.location.origin` is the only correct answer:
+ * hard-coding a host would break on the next domain, and a trailing slash, a port or a path left on
+ * the end is the usual reason a working embed turns into error 153 after a move to a new domain.
+ *
+ * @param {string} key The YouTube video key.
+ * @returns {string} The embed URL.
+ */
+function embedUrl(key) {
+    const params = new URLSearchParams({
+        autoplay: '1',
+        rel: '0',
+        modestbranding: '1',
+        playsinline: '1',
+        origin: window.location.origin
+    });
+
+    return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(key)}?${params.toString()}`;
 }
 
 /**

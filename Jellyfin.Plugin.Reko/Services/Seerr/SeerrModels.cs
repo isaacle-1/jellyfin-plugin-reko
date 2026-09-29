@@ -268,8 +268,18 @@ public sealed class SeerrRequestBody
     [JsonPropertyName("mediaId")]
     public int MediaId { get; set; }
 
-    /// <summary>Gets or sets the seasons to request. TV only.</summary>
+    /// <summary>
+    /// Gets or sets the seasons to request. TV only.
+    /// </summary>
+    /// <remarks>
+    /// Omitted entirely when null. Seerr validates its own request bodies with
+    /// <c>express-openapi-validator</c>, and <c>seasons</c> is a <c>oneOf</c> of array, string and
+    /// the literal <c>"all"</c>. A JSON <c>null</c> matches none of those, so sending the property at
+    /// all for a movie — which is what happens the moment it is serialised without this attribute —
+    /// makes every movie request fail with a 400 before it reaches the route.
+    /// </remarks>
     [JsonPropertyName("seasons")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<int>? Seasons { get; set; }
 
     /// <summary>Gets or sets a value indicating whether this is a 4K request.</summary>

@@ -82,7 +82,6 @@ public sealed class RekoPayloadBuilder
             TabLabel = string.IsNullOrWhiteSpace(config.TabLabel) ? "Reko" : config.TabLabel.Trim(),
             HeroSeconds = Math.Clamp(config.HeroRotationSeconds, 3, 60),
             EnableSearch = config.EnableSearch,
-            EnableHoverPreviews = config.EnableHoverPreviews,
             ShowWatchProviders = config.ShowWatchProviders,
             ShowTrailers = config.ShowTrailers,
             ShowCast = config.ShowCast,

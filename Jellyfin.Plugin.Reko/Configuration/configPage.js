@@ -31,7 +31,6 @@ const BOOLEAN = [
     'EnableSeerr',
     'SeerrMapJellyfinUsers',
     'EnableTab',
-    'EnableHoverPreviews',
     'EnableContinueWatching',
     'EnablePersonalizedRows',
     'HideWatchedFromPersonalized',

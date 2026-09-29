@@ -5,8 +5,8 @@
 import * as api from './api.js';
 import * as router from './router.js';
 import { el, empty, createLogger, isModernLayout } from './utils.js';
-import { createCard, hidePreview } from './card.js';
 import { createHero } from './hero.js';
+import { watchChrome } from './chrome.js';
 import { createRail } from './rail.js';
 import { createTitlePage, createPersonPage } from './detail.js';
 import { createSearchView, createBrowseView } from './search.js';
@@ -54,6 +54,8 @@ export async function start(panel) {
     if (!panel) {
         return;
     }
+
+    watchChrome();
 
     // The route on its own is not enough to identify a render: the home route is remounted on every
     // navigation, and the new panel starts empty, so the panel has to be part of the key too.
@@ -119,7 +121,6 @@ export async function start(panel) {
  */
 export async function renderRoute(panel) {
     const route = router.parse();
-    hidePreview();
 
     const generation = ++state.generation;
     const host = el('div.rekoHost');
@@ -400,18 +401,39 @@ function playJellyfinItem(card) {
 /**
  * Replaces the panel contents with a node, reusing the mounted host when there is one.
  *
+ * The node goes *inside* Reko's own root rather than replacing it. The whole stylesheet is written
+ * against the custom properties declared on `.rekoApp` — `--reko-text`, `--reko-accent`,
+ * `--reko-border` and the rest — so anything mounted beside that element resolves none of them and
+ * renders with every colour falling back to whatever Jellyfin happened to have inherited. On a dark
+ * theme that is close enough to Reko's own palette to look correct, so the bug hides completely until
+ * somebody switches to a light theme and finds white text on a white page.
+ *
  * @param {HTMLElement} panel The tab panel.
  * @param {HTMLElement} node The node to show.
  */
 function show(panel, node) {
-    if (state.rendered && state.rendered.parentElement === panel) {
+    const root = appRootOf(panel);
+
+    if (state.rendered?.parentElement === root) {
         state.rendered.replaceWith(node);
     } else {
-        empty(panel);
-        panel.appendChild(node);
+        empty(root);
+        root.appendChild(node);
     }
 
     state.rendered = node;
+}
+
+/**
+ * Reko's application root inside a panel.
+ *
+ * @param {HTMLElement} panel The tab panel.
+ * @returns {HTMLElement} The root, or the panel itself before the injector has made one.
+ */
+function appRootOf(panel) {
+    // The injector owns this element and re-appends it on every pass, so mounting inside a temporary
+    // one would only buy a frame of the same problem.
+    return panel.querySelector('[data-reko="app"]') ?? panel;
 }
 
 /**
@@ -437,7 +459,9 @@ export function showBanner(message) {
         })
     ]);
 
-    panel.prepend(banner);
+    // Inside the root, like everything else: the banner reads --reko-text and --reko-border, and a
+    // banner with neither is a black rectangle with black writing on it.
+    appRootOf(panel).prepend(banner);
 }
 
 /**

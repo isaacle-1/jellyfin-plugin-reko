@@ -168,6 +168,38 @@ function installDomShim() {
     const makeClassList = () => new FakeClassList();
 
     /**
+     * A stand-in for CSSStyleDeclaration, carrying the custom-property API as well as the plain
+     * properties.
+     *
+     * Custom properties are not reachable by assignment: `style['--x'] = '1px'` is a plain field on
+     * the object and `style.getPropertyValue('--x')` returns nothing, so a shim without this lets a
+     * module look like it published something when it published nothing at all.
+     *
+     * @param {object} [initial] Properties to start with.
+     * @returns {object} The style object.
+     */
+    function makeStyle(initial = null) {
+        const custom = new Map();
+        const style = {};
+
+        if (initial) {
+            for (const [name, value] of Object.entries(initial)) {
+                if (name.startsWith('--')) {
+                    custom.set(name, value);
+                } else {
+                    style[name] = value;
+                }
+            }
+        }
+
+        style.setProperty = (name, value) => custom.set(name, String(value));
+        style.getPropertyValue = (name) => custom.get(name) ?? '';
+        style.removeProperty = (name) => custom.delete(name);
+
+        return style;
+    }
+
+    /**
      * Copies a node deeply, elements and text alike.
      *
      * @param {object} node The node to copy.
@@ -189,7 +221,11 @@ function installDomShim() {
             this.parentElement = null;
             this.classList = makeClassList();
             this.dataset = {};
-            this.style = {};
+
+            // A real CSSStyleDeclaration, not a plain object: Reko publishes a custom property with
+            // setProperty and reads it back with getPropertyValue, and a bare object silently loses
+            // both, so the code under test would look like it ran and had done nothing.
+            this.style = makeStyle();
             this.attributes = {};
             this.value = '';
             this.checked = false;
@@ -327,7 +363,7 @@ function installDomShim() {
             copy.classList = makeClassList();
             this.classList.forEach((n) => copy.classList.add(n));
             copy.ownText = this.ownText;
-            copy.style = { ...this.style };
+            copy.style = makeStyle(this.style);
             copy.hidden = this.hidden;
             copy.href = this.href;
 
@@ -424,6 +460,14 @@ function installDomShim() {
         }
 
         getBoundingClientRect() {
+            // `box` lets a test say how big an element is. Jellyfin's two headers differ only in
+            // size — 48px for the Modern app bar, more for the Legacy one — and that difference is
+            // the whole of what the sticky offset depends on.
+            if (this.box) {
+                const { width = 0, height = 0, top = 0, left = 0 } = this.box;
+                return { top, left, width, height, right: left + width, bottom: top + height };
+            }
+
             return this.hidden
                 ? { top: 0, left: 0, width: 0, height: 0, right: 0, bottom: 0 }
                 : { top: 0, left: 0, width: 800, height: 600, right: 800, bottom: 600 };
@@ -499,6 +543,23 @@ function installDomShim() {
 
     globalThis.requestAnimationFrame = (fn) => setTimeout(fn, 0);
     globalThis.getComputedStyle = () => ({ display: 'block', visibility: 'visible', opacity: '1' });
+
+    // Timers are unref'd rather than removed. Reko uses them to poll for the Jellyfin API client, to
+    // debounce search, and to rotate the hero, and client.js's boot poller alone keeps the process
+    // alive for thirty seconds after every check has passed — which is a slow CI run that looks
+    // exactly like a hung one. Unref'd timers still fire; they just cannot hold the process open.
+    const realSetTimeout = globalThis.setTimeout;
+    const realSetInterval = globalThis.setInterval;
+    globalThis.setTimeout = (...args) => {
+        const handle = realSetTimeout(...args);
+        handle.unref?.();
+        return handle;
+    };
+    globalThis.setInterval = (...args) => {
+        const handle = realSetInterval(...args);
+        handle.unref?.();
+        return handle;
+    };
     globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
     globalThis.CustomElements = { upgradeSubtree() {} };
     globalThis.Event = class {
@@ -511,17 +572,45 @@ function installDomShim() {
     globalThis.CSS = { escape: (v) => v };
 
     // router.parse() defaults to the live location, so the shim needs one.
-    globalThis.window = {
-        location: { hash: '#/home', pathname: '/web/', search: '' },
-        history: { state: null, replaceState() {}, pushState() {} },
-        innerWidth: 1280,
-        innerHeight: 800,
-        localStorage: globalThis.localStorage,
-        addEventListener() {},
-        removeEventListener() {},
-        ApiClient: null,
-        console
+    //
+    // `window` is a facade over the global object rather than a separate object, because in a browser
+    // it *is* the global object and the modules may reach for either. A shim where `window` is a
+    // private object fails in the wrong direction: code that calls `window.getComputedStyle` throws
+    // here and would have worked in the browser, which teaches the reader to distrust passing tests.
+    globalThis.window = new Proxy(globalThis, {
+        get(target, property) {
+            if (property in target) {
+                return target[property];
+            }
+
+            return undefined;
+        },
+        has() {
+            return true;
+        }
+    });
+    globalThis.window.location = { hash: '#/home', pathname: '/web/', search: '' };
+    globalThis.window.history = { state: null, replaceState() {}, pushState() {} };
+    globalThis.window.innerWidth = 1280;
+    globalThis.window.innerHeight = 800;
+    globalThis.location = globalThis.window.location;
+    globalThis.ApiClient = null;
+
+    // Listeners are recorded rather than dropped, so a test can fire one and see what the handler did.
+    const windowListeners = new Map();
+    globalThis.__windowListeners = windowListeners;
+    globalThis.addEventListener = (type, handler) => {
+        if (!windowListeners.has(type)) {
+            windowListeners.set(type, []);
+        }
+
+        windowListeners.get(type).push(handler);
     };
+    globalThis.removeEventListener = (type, handler) => {
+        const list = windowListeners.get(type) ?? [];
+        windowListeners.set(type, list.filter((h) => h !== handler));
+    };
+
     globalThis.__fakeElement = FakeElement;
 }
 
@@ -557,7 +646,7 @@ function check(what, condition) {
 
 // Every module must import cleanly, which executes its top level.
 const modules = {};
-for (const entry of ['utils', 'api', 'router', 'inject', 'card', 'rail', 'hero', 'modal', 'seerr', 'detail', 'search', 'app']) {
+for (const entry of ['utils', 'api', 'router', 'inject', 'chrome', 'card', 'rail', 'hero', 'modal', 'seerr', 'detail', 'search', 'app']) {
     const url = pathToFileURL(join(tmp, 'js', `${entry}.js`)).href;
     try {
         modules[entry] = await import(url);
@@ -579,7 +668,8 @@ const expected = {
     api: ['bootstrap', 'home', 'rail', 'title', 'season', 'person', 'search', 'browse', 'seerrStatus', 'seerrRequest', 'seerrStates', 'messageOf'],
     router: ['parse', 'build', 'navigate', 'replace', 'TAB_HASH', 'DEFAULT_TAB_INDEX'],
     inject: ['ensure', 'panel', 'currentTabIndex', 'hasTabButton', 'selectTab'],
-    card: ['createCard', 'hidePreview'],
+    card: ['createCard', 'badgesFor'],
+    chrome: ['watchChrome'],
     rail: ['createRail', 'createRailPlaceholder', 'hydrateRail'],
     hero: ['createHero'],
     modal: ['showModal', 'closeModal', 'showMessage'],
@@ -628,10 +718,10 @@ try {
     const rail = modules.rail;
     const hero = modules.hero;
     const sample = { id: 1, type: 'movie', title: 'X', genres: [], inLibrary: false };
-    card.createCard(sample, { enableHoverPreviews: true }, {});
+    card.createCard(sample, {}, {});
     rail.createRail({ id: 'r', title: 'R', items: [sample] }, {}, {});
     hero.createHero([sample], { heroSeconds: 5 }, {});
-    check('hidePreview is callable with no prior show', (card.hidePreview(), true));
+    check('badgesFor is callable', Array.isArray(card.badgesFor(sample)));
 
     // The rank is a flex sibling of the poster, not an absolutely positioned overlay. The
     // difference is invisible in a unit test and obvious on screen: a number drawn to the left of a
@@ -649,6 +739,72 @@ try {
     check('the card still exposes its title', ranked.querySelector('.rekoCardTitle')?.textContent === 'X');
 } catch (error) {
     failures.push(`component checks threw: ${error.stack || error.message}`);
+}
+
+try {
+    // The sticky header's offset. This is the whole of what stands between "the Reko title and the
+    // search box scroll under Jellyfin's app bar and disappear" and them staying put, and it is
+    // invisible in a unit test and obvious on a scrolled page.
+    const chrome = modules.chrome;
+    const FakeElement = globalThis.__fakeElement;
+    const body = globalThis.document.body;
+
+    body.replaceChildren();
+
+    const appBar = new FakeElement('div');
+    appBar.className = 'MuiAppBar-root';
+    appBar.box = { width: 1286, height: 48 };
+    body.appendChild(appBar);
+
+    // The Modern layout keeps the legacy header mounted at zero height. It must not win.
+    const collapsed = new FakeElement('div');
+    collapsed.className = 'skinHeader';
+    collapsed.box = { width: 1286, height: 0 };
+    body.appendChild(collapsed);
+
+    const root = new FakeElement('div');
+    root.setAttribute('data-reko', 'app');
+    body.appendChild(root);
+
+    chrome.watchChrome();
+    check('the Modern app bar height is published', root.style.getPropertyValue('--reko-chrome-h') === '48px');
+
+    // The Legacy layout's header is taller and is the only one on screen.
+    appBar.hidden = true;
+    collapsed.box = { width: 1286, height: 96 };
+    chrome.watchChrome();
+    check('the Legacy header height is published', root.style.getPropertyValue('--reko-chrome-h') === '96px');
+
+    // Jellyfin rebuilds the home route on every navigation, which detaches Reko's root. A fresh root
+    // must be given the offset even though the height has not changed: comparing heights alone would
+    // leave it with none, which is the bug the offset was added to fix.
+    const replaced = new FakeElement('div');
+    replaced.setAttribute('data-reko', 'app');
+    collapsed.box = { width: 1286, height: 0 };
+    body.replaceChildren(appBar, collapsed, replaced);
+    appBar.hidden = false;
+
+    chrome.watchChrome();
+    check('a rebuilt root is given the offset too', replaced.style.getPropertyValue('--reko-chrome-h') === '48px');
+
+    // Jellyfin also keeps the previous home page mounted behind the one on screen, so there are
+    // routinely two roots and only one of them is visible. Publishing to the first and stopping puts
+    // the stylesheet's fallback on the one being looked at — which on the Legacy layout is the
+    // Modern layout's 48px, under a 96px header.
+    const hidden = new FakeElement('div');
+    hidden.setAttribute('data-reko', 'app');
+    const visible = new FakeElement('div');
+    visible.setAttribute('data-reko', 'app');
+    hidden.hidden = true;
+    body.replaceChildren(appBar, collapsed, hidden, visible);
+
+    appBar.hidden = true;
+    collapsed.box = { width: 1286, height: 96 };
+    chrome.watchChrome();
+    check('every root is published, not just the first', hidden.style.getPropertyValue('--reko-chrome-h') === '96px'
+        && visible.style.getPropertyValue('--reko-chrome-h') === '96px');
+} catch (error) {
+    failures.push(`chrome checks threw: ${error.stack || error.message}`);
 }
 
 /**
@@ -796,6 +952,51 @@ try {
     check('ensure returns null with no home page', inject.ensure() === null);
 } catch (error) {
     failures.push(`inject checks threw: ${error.stack || error.message}`);
+}
+
+try {
+    // Every view is mounted *inside* Reko's root, because that is the element every custom property in
+    // the stylesheet is declared on. Mounting beside it resolves none of --reko-text, --reko-accent,
+    // --reko-border and the rest, so the whole palette quietly falls back to Jellyfin's inherited
+    // colours — indistinguishable on a dark theme, and unreadable on a light one.
+    const app = modules.app;
+    const inject = modules.inject;
+    const page = buildModernHome();
+    const panel = inject.ensure({ label: 'Reko' });
+    const root = panel.querySelector('[data-reko="app"]');
+
+    check('the injector makes an application root', root !== null);
+
+    // The client goes through ApiClient.ajax rather than fetch, because that is the one path
+    // jellyfin-web guarantees to attach credentials to.
+    globalThis.ApiClient = {
+        getUrl: (name) => `/Reko/${name}`,
+        ajax: async ({ url: target }) => ({
+            config: { tabLabel: 'Reko', enableSearch: true },
+            tmdbConfigured: true,
+            rails: [],
+            hero: [],
+            target
+        })
+    };
+
+    await app.start(panel);
+
+    const header = panel.querySelector('.rekoHeader');
+    check('a view is rendered', header !== null);
+    check('the rendered view is inside the application root', header !== null && root.contains(header));
+    check('the application root survives the first render', panel.contains(root));
+
+    // The tab is switched away from and back again, which is what a re-render looks like: the view is
+    // torn down and rebuilt, and the root has to still be there to build it into.
+    await app.renderRoute(panel);
+    check('the root survives a re-render', panel.contains(root) && root.querySelector('.rekoHeader') !== null);
+
+    // Restored so that client.js's boot poller, which is watching for exactly this, keeps waiting
+    // instead of racing the rest of the run.
+    globalThis.ApiClient = null;
+} catch (error) {
+    failures.push(`mount checks threw: ${error.stack || error.message}`);
 }
 
 rmSync(tmp, { recursive: true, force: true });

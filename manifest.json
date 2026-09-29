@@ -9,6 +9,12 @@
     "imageUrl": "https://raw.githubusercontent.com/isaacle-1/jellyfin-plugin-reko/main/artwork/reko.png",
     "versions": [
       {
+        "version": "1.0.2.0",
+        "changelog": "The Reko header and search box no longer disappear under Jellyfin's own header when you scroll: a new module measures whichever header the current layout uses and the sticky header parks below it, in both the Modern and Legacy layouts. Movie requests are no longer rejected by Overseerr for sending seasons: null, which matches none of the schemas it accepts. YouTube trailers stop showing error 153 by sending the embed its own Referrer policy and origin, with a Watch on YouTube link under the player. Reko's own colour variables now reach its content again, which they had not been since the first release: views were mounted beside the element the variables are declared on, so every colour fell back to Jellyfin's and a light theme rendered white text on white. Hover previews are removed, along with their setting.",
+        "targetAbi": "12.1.0.0",
+        "timestamp": "2026-09-29T03:20:00Z"
+      },
+      {
         "version": "1.0.1.0",
         "changelog": "Fixes the certifications on every movie and series, and the retry storm behind them. The TMDB models for release_dates and content_ratings read a map keyed by country code; TMDB returns an array of per-country entries, so both failed to deserialise and took out every movie and series title page and every hero with them. Shared cache production is no longer bound to the request that happened to trigger it, so a caller going away no longer cancels work the next caller is waiting on. A cancelled request now returns 499 instead of a logged 500. Movie and series pages no longer request TMDB keywords, which were fetched on every title page and read by nothing.",
         "targetAbi": "12.1.0.0",
