@@ -544,6 +544,17 @@ function installDomShim() {
     globalThis.requestAnimationFrame = (fn) => setTimeout(fn, 0);
     globalThis.getComputedStyle = () => ({ display: 'block', visibility: 'visible', opacity: '1' });
 
+    // Pseudo-elements are a second argument, and a theme's header decoration is always one of them.
+    // `pseudos` on an element is the test-only way to say "this element has a ::after like that".
+    const baseGetComputedStyle = globalThis.getComputedStyle;
+    globalThis.getComputedStyle = (node, pseudo = null) => {
+        if (!pseudo) {
+            return baseGetComputedStyle(node);
+        }
+
+        return (node?.pseudos ?? {})[pseudo] ?? baseGetComputedStyle(node);
+    };
+
     // Timers are unref'd rather than removed. Reko uses them to poll for the Jellyfin API client, to
     // debounce search, and to rotate the hero, and client.js's boot poller alone keeps the process
     // alive for thirty seconds after every check has passed — which is a slow CI run that looks
@@ -802,6 +813,44 @@ try {
     chrome.watchChrome();
     check('every root is published, not just the first', hidden.style.getPropertyValue('--reko-chrome-h') === '96px'
         && visible.style.getPropertyValue('--reko-chrome-h') === '96px');
+
+    // A theme's header decoration. Abyss puts a fixed 10rem backdrop-blurred gradient on the app bar,
+    // which reaches 149px down a bar that is only 48px tall, and a header sticking inside it is
+    // blurred out and unclickable. The offset has to be the painted depth, not the bar's height.
+    collapsed.hidden = true;
+    appBar.hidden = false;
+    appBar.pseudos = {
+        '::after': {
+            content: '""',
+            position: 'fixed',
+            top: '0px',
+            height: '148.8px',
+            bottom: 'auto'
+        }
+    };
+
+    chrome.watchChrome();
+    check('a theme header decoration sets the offset', hidden.style.getPropertyValue('--reko-chrome-h') === '149px');
+
+    // A decoration the theme is not currently showing must not keep the offset inflated.
+    appBar.pseudos = { '::after': { content: 'none', position: 'static', top: 'auto', height: 'auto', bottom: 'auto' } };
+    chrome.watchChrome();
+    check('an absent decoration falls back to the bar height', hidden.style.getPropertyValue('--reko-chrome-h') === '48px');
+
+    // An absolutely positioned decoration is measured from the header, not the viewport.
+    appBar.box = { width: 1286, height: 48, top: 0 };
+    appBar.pseudos = {
+        '::before': {
+            content: '""',
+            position: 'absolute',
+            top: '48px',
+            height: '40px',
+            bottom: 'auto'
+        }
+    };
+
+    chrome.watchChrome();
+    check('an absolute decoration is measured from the header', hidden.style.getPropertyValue('--reko-chrome-h') === '88px');
 } catch (error) {
     failures.push(`chrome checks threw: ${error.stack || error.message}`);
 }

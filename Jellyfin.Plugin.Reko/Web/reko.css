@@ -29,10 +29,14 @@
     color: var(--reko-text);
     font-family: inherit;
 
-    /* How tall Jellyfin's own header is, published by chrome.js. It is the sticky header's top
-       offset: Jellyfin's bar is fixed and z-indexed at 1100, so a Reko header sticking at 0 slides
-       underneath it and disappears as soon as the page scrolls. The fallback is the Modern layout's
-       48px app bar, which is the one layout where chrome.js might not have run yet. */
+    /* How far down the viewport Jellyfin's own chrome paints, published by chrome.js. It is the sticky
+       header's top offset: Jellyfin's bar is fixed, so a Reko header sticking at 0 slides underneath
+       it as soon as the page scrolls. The fallback is the Modern layout's 48px app bar, which is the
+       one layout where chrome.js might not have run yet.
+
+       It is the painted depth and not the bar's height, because a theme can draw its own header
+       decoration further down the screen. Abyss puts a fixed 10rem backdrop-blurred gradient on the
+       app bar, and anything sticking inside it is blurred out and unclickable. */
     --reko-chrome-h: 48px;
 }
 

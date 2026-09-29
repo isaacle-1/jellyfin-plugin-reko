@@ -9,6 +9,12 @@
     "imageUrl": "https://raw.githubusercontent.com/isaacle-1/jellyfin-plugin-reko/main/artwork/reko.png",
     "versions": [
       {
+        "version": "1.0.3.0",
+        "changelog": "Fixes the Reko header and search field being blurred out and unclickable under a theme that decorates Jellyfin's header. Abyss draws its own header decoration: a fixed 10rem backdrop-blurred gradient on the app bar, and an 8em one in the Legacy layout, which is 149px of decoration on a bar that is 64px tall. Reko now measures how far down the screen Jellyfin's chrome actually paints rather than how tall its bar is, and parks below that. On a stock server that is the same number it always was.",
+        "targetAbi": "12.1.0.0",
+        "timestamp": "2026-09-29T04:35:00Z"
+      },
+      {
         "version": "1.0.2.0",
         "changelog": "The Reko header and search box no longer disappear under Jellyfin's own header when you scroll: a new module measures whichever header the current layout uses and the sticky header parks below it, in both the Modern and Legacy layouts. Movie requests are no longer rejected by Overseerr for sending seasons: null, which matches none of the schemas it accepts. YouTube trailers stop showing error 153 by sending the embed its own Referrer policy and origin, with a Watch on YouTube link under the player. Reko's own colour variables now reach its content again, which they had not been since the first release: views were mounted beside the element the variables are declared on, so every colour fell back to Jellyfin's and a light theme rendered white text on white. Hover previews are removed, along with their setting.",
         "targetAbi": "12.1.0.0",

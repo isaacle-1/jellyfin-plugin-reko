@@ -133,16 +133,25 @@ selects a tab that does not exist and the deep link lands on Home.
 
 ### Living inside Jellyfin's header
 
-Jellyfin's header is `position: fixed` and opaque once the page scrolls. Reko's is `position: sticky`
-inside the scroll container. Both stick to the top of the viewport, so whichever the browser resolves
-last wins, and Jellyfin's sits at `z-index: 1100` against Reko's 4 — scrolling pushes the Reko title
-and the search field underneath it and they vanish.
+Jellyfin's header is `position: fixed` and `z-index: 1100`. Reko's is `position: sticky` inside the
+scroll container. Both stick to the top of the viewport, so whichever the browser resolves last wins
+and scrolling pushes the Reko title and the search field underneath Jellyfin's.
 
-CSS cannot measure a sibling, so `chrome.js` measures the visible header — `.MuiAppBar-root` on the
-Modern layout, `.skinHeader` on the Legacy and TV layouts, of which only one is ever on screen — and
-publishes the height as `--reko-chrome-h`, which the stylesheet uses as the sticky `top`. It writes to
-every Reko root in the document, because Jellyfin keeps the previous home page mounted behind the one
-on screen and there are routinely two.
+CSS cannot measure a sibling, so `chrome.js` measures and publishes the depth as `--reko-chrome-h`,
+which the stylesheet uses as the sticky `top`. It writes to every Reko root in the document, because
+Jellyfin keeps the previous home page mounted behind the one on screen and there are routinely two.
+
+The measurement is **how far down the viewport Jellyfin's chrome paints**, not how tall its bar is,
+and the difference is the whole of one bug. A theme can draw its own header decoration. Abyss — the
+most popular Jellyfin theme — puts a `position: fixed` 10rem gradient with a `backdrop-filter: blur`
+on the app bar, and its legacy rules do the same with an 8em one. That is 149px of decoration on a bar
+that is 64px tall, and a `backdrop-filter` blurs everything painted behind it: a Reko header sticking
+at 64 is smeared and unclickable however far the page has scrolled. So the depth takes the header's
+own bottom edge and the bottom edge of any positioned `::before` or `::after` it carries.
+
+Out-ranking the decoration with a higher `z-index` also works, and is the wrong answer: it puts Reko's
+header above Jellyfin's navigation drawer, which sits at 1099 and is drawn over the page. Sitting
+below the decoration draws the same way the theme already looks.
 
 ### The custom property scope
 
@@ -222,6 +231,12 @@ node tools/mock-services.js &        # a fake TMDB and Seerr on :8099
 disposable. The port is not a command line flag, because Jellyfin 12 reads it from `network.xml` in
 the config directory. Then point Reko's TMDB base URL at `http://127.0.0.1:8099/tmdb/3/`, its image
 base URL at `http://127.0.0.1:8099/image/` and its Seerr URL at `http://127.0.0.1:8099/seerr`.
+
+The test instance runs **with Abyss** loaded, through Dashboard ▸ Branding ▸ Custom CSS, because
+Abyss is what a themed server actually looks like and it found a bug the default theme could not:
+its header decoration reaches further down the screen than its own bar is tall. See the header section
+above. `layout` in local storage switches between the Modern and Legacy layouts — `modern`,
+`desktop-legacy`, or remove it for auto.
 
 The client-side trace is a local storage flag rather than a build:
 

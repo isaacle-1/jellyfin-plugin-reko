@@ -1,37 +1,52 @@
 /**
  * Keeps Reko's sticky header clear of Jellyfin's own header.
  *
- * Jellyfin's header is `position: fixed` and, once the page has scrolled, opaque. Reko's header is
- * `position: sticky` inside that scroll container. Both stick to the top of the viewport, so
- * whichever one the browser resolves last wins — and Jellyfin's sits at `z-index: 1100` against
- * Reko's 4. The result is that scrolling pushes the Reko title and the search field underneath the
- * app bar and they simply disappear, which reads as the tab having broken.
+ * Jellyfin's header is `position: fixed`, `z-index: 1100`, and opaque once the page has scrolled.
+ * Reko's header is `position: sticky` inside the scroll container. Both stick to the top of the
+ * viewport, so scrolling pushes Reko's underneath Jellyfin's and the tab's title and search field
+ * disappear — which reads as the tab having broken.
  *
- * CSS cannot measure a sibling, so the offset is measured here and published as
- * `--reko-chrome-h`, which the stylesheet uses as the sticky `top`. The header then parks directly
- * below Jellyfin's rather than behind it.
+ * CSS cannot measure a sibling, so the offset is measured here and published as `--reko-chrome-h`,
+ * which the stylesheet uses as the sticky `top`.
  *
  * Two layouts, two headers, and neither can be assumed to exist:
  *
- *   Modern  `.MuiAppBar-root`, fixed, 48px tall, opaque once the page scrolls.
+ *   Modern  `.MuiAppBar-root`, fixed, 48px tall.
  *   Legacy  `.skinHeader`, also fixed, and taller: it carries the title, the tab strip and the user
  *            menu. TV clients only ever use this one.
  *
  * The Modern layout keeps the legacy header mounted but collapsed to zero height, so "the first one
  * in the document" is not a usable answer. The tallest visible candidate is used instead.
+ *
+ * ## The header's height is not the same as how far down the screen it paints
+ *
+ * A theme can draw its own header decoration. Abyss — the most popular Jellyfin theme — puts a
+ * `position: fixed` 10rem gradient with a `backdrop-filter: blur` on the app bar, and Abyss's own
+ * legacy rules do the same thing with a 8em one. That decoration is 148px tall on a bar that is only
+ * 64px, and a `backdrop-filter` blurs everything painted behind it: a Reko header sticking at 64 is
+ * inside it, smeared and unclickable, however far down the page has scrolled.
+ *
+ * So the measurement is not the header's height but the depth at which Jellyfin's chrome stops
+ * painting, taken as the header's own bottom edge and the bottom edge of any pseudo-element it
+ * carries that is positioned. `::before` and `::after` are the only pseudo-elements reachable
+ * without a selector hack, and a header decoration is essentially always one of the two.
+ *
+ * Out-ranking the decoration with a higher `z-index` would also work, and is the wrong answer: it
+ * puts Reko's header above Jellyfin's navigation drawer, which sits at 1099 and is drawn over the
+ * page content. Sitting below the decoration instead draws the same way the theme already looks.
  */
 
 /** The CSS custom property the stylesheet reads. */
 const OFFSET_PROPERTY = '--reko-chrome-h';
 
-/** The height most recently published, so the property is only written when it changes. */
+/** The depth most recently published, so the property is only written when it changes. */
 let published = null;
 
 /**
- * The set of roots the height was last written to.
+ * The set of roots the depth was last written to.
  *
  * Jellyfin rebuilds the home route on every navigation, which detaches Reko's root along with the
- * panel that held it, and a fresh root is created in its place. Comparing heights alone would then
+ * panel that held it, and a fresh root is created in its place. Comparing depths alone would then
  * wrongly conclude there was nothing to do and leave the new root with no offset at all — which is
  * the same bug as never having measured it in the first place.
  */
@@ -96,7 +111,68 @@ function isPainted(node) {
 }
 
 /**
- * Publishes the current header height, if it has changed.
+ * How far down the viewport Jellyfin's chrome paints.
+ *
+ * @param {HTMLElement} header The header element.
+ * @returns {number} The depth in pixels, never less than the header's own height.
+ */
+function paintedDepth(header) {
+    const rect = header.getBoundingClientRect();
+    let deepest = rect.bottom;
+
+    for (const pseudo of ['::before', '::after']) {
+        deepest = Math.max(deepest, pseudoDepth(header, pseudo, rect.top));
+    }
+
+    return Math.max(0, Math.round(deepest));
+}
+
+/**
+ * How far down the viewport one pseudo-element of the header reaches.
+ *
+ * @param {HTMLElement} header The header element.
+ * @param {string} pseudo The pseudo-element selector, `::before` or `::after`.
+ * @param {number} headerTop The header's own top edge, for resolving an absolutely positioned box.
+ * @returns {number} The bottom edge in viewport coordinates, or zero when there is nothing painted.
+ */
+function pseudoDepth(header, pseudo, headerTop) {
+    const style = window.getComputedStyle(header, pseudo);
+
+    // A pseudo-element that was never styled computes to the element's own style, so `content` is the
+    // only reliable evidence that there is anything there at all.
+    if (!style || style.content === 'none' || style.content === 'normal') {
+        return 0;
+    }
+
+    if (style.position !== 'fixed' && style.position !== 'absolute') {
+        return 0;
+    }
+
+    const height = Number.parseFloat(style.height);
+
+    if (Number.isFinite(height) && height > 0) {
+        const top = Number.parseFloat(style.top);
+        const offset = Number.isFinite(top) ? top : 0;
+
+        // Fixed is viewport-relative, absolute is relative to the header's padding box, which for a
+        // fixed header is the same place on screen.
+        return (style.position === 'fixed' ? offset : headerTop + offset) + height;
+    }
+
+    // A pseudo sized by `top` and `bottom` rather than a height. Only meaningful when fixed: an
+    // absolute `bottom` is measured from the header, not the viewport.
+    if (style.position === 'fixed') {
+        const bottom = Number.parseFloat(style.bottom);
+        if (Number.isFinite(bottom)) {
+            return window.innerHeight - bottom;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Publishes the current chrome depth, if it has changed.
  *
  * Every root is written, not just the first. Jellyfin keeps the previous home page mounted behind the
  * one on screen, so there are routinely two Reko roots in the document and which one is visible is
@@ -113,21 +189,21 @@ function sync() {
     }
 
     const header = chromeElement();
-    const height = header ? Math.round(header.getBoundingClientRect().height) : 0;
+    const depth = header ? paintedDepth(header) : 0;
 
-    const sameHeight = height === published;
+    const sameDepth = depth === published;
     const sameRoots = roots.length === publishedOn.length
         && roots.every((root, index) => root === publishedOn[index]);
 
-    if (sameHeight && sameRoots) {
+    if (sameDepth && sameRoots) {
         return;
     }
 
-    published = height;
+    published = depth;
     publishedOn = roots;
 
     for (const root of roots) {
-        root.style.setProperty(OFFSET_PROPERTY, `${height}px`);
+        root.style.setProperty(OFFSET_PROPERTY, `${depth}px`);
     }
 }
 

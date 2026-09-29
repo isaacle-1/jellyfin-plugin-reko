@@ -4,6 +4,25 @@ All notable changes to Reko are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Reko uses
 [semantic versioning](https://semver.org/spec/v2.0.0.html) on the four-part Jellyfin version.
 
+## [1.0.3] — 2026-09-29
+
+One fix, for one theme, that turned out to be a general one.
+
+### Fixed
+
+- **The tab's header and search field are blurred out and unclickable under a theme that decorates
+  Jellyfin's header.** Abyss draws its own header decoration: a `position: fixed` 10rem gradient with
+  a `backdrop-filter: blur` on the app bar, and an 8em one in the Legacy layout. That is 149px of
+  decoration on a bar that is 64px tall, and a backdrop blur affects everything painted behind it — so
+  the sticky Reko header sat inside it however far the page was scrolled. Reko now measures how far
+  down the viewport Jellyfin's chrome actually *paints*, not how tall its bar is, and parks below
+  that. On a stock server that is the same number it always was; under Abyss it is 149, and the header
+  moves down into the theme's fade and looks like part of it.
+
+  Out-ranking the decoration with a higher `z-index` was the other answer and it is the wrong one: it
+  puts Reko's header above Jellyfin's navigation drawer, which sits just below the app bar and is
+  drawn over the page content. Measured, on both layouts, under the theme itself.
+
 ## [1.0.2] — 2026-09-29
 
 Found by a real server's log and a real scrolled page. The tab's header was sliding under Jellyfin's
