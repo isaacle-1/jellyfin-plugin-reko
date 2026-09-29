@@ -31,6 +31,14 @@
         "timestamp": "2026-09-29T03:20:00Z",
         "sourceUrl": "https://github.com/isaacle-1/jellyfin-plugin-reko/releases/download/v1.0.2.0/reko_1.0.2.0.zip",
         "checksum": "1820c52cefced6e165307ece2f26dc6c"
+      },
+      {
+        "version": "1.0.3.0",
+        "changelog": "Fixes the Reko header and search field being blurred out and unclickable under a theme that decorates Jellyfin's header. Abyss draws its own header decoration: a fixed 10rem backdrop-blurred gradient on the app bar, and an 8em one in the Legacy layout, which is 149px of decoration on a bar that is 64px tall. Reko now measures how far down the screen Jellyfin's chrome actually paints rather than how tall its bar is, and parks below that. On a stock server that is the same number it always was.",
+        "targetAbi": "12.1.0.0",
+        "timestamp": "2026-09-29T04:35:00Z",
+        "sourceUrl": "https://github.com/isaacle-1/jellyfin-plugin-reko/releases/download/v1.0.3.0/reko_1.0.3.0.zip",
+        "checksum": "7648490a9d277af13391e43a215f271c"
       }
     ]
   }
