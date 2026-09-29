@@ -72,6 +72,8 @@ jobs:
       # Jellyfin installs a plugin from a zip whose root holds the assembly.
       # <repo>_<version>.zip is the naming the official repository's manifest uses, and it is the
       # name the release shows up under in the dashboard.
+      # meta.json is generated rather than copied from manifest.json: the two carry the same fields
+      # in different shapes, and the array form installs fine and then fails to reconcile.
       - name: "Package"
         id: package
         run: |
@@ -79,7 +81,8 @@ jobs:
           mkdir -p staging
           cp artifact/Jellyfin.Plugin.Reko.dll staging/
           cp artifact/Jellyfin.Plugin.Reko.pdb staging/
-          cp manifest.json staging/meta.json
+          python3 tools/build-package-meta.py \
+            "${{ steps.version.outputs.version }}" manifest.json staging/meta.json
           cd staging
           zip -r "../reko_${{ steps.version.outputs.version }}.zip" .
           cd ..
