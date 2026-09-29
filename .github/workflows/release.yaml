@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release, without the leading v"
+        description: "Version to release, without the leading v"
         required: true
 
 permissions:
@@ -39,7 +39,7 @@ jobs:
           node-version: "22"
 
       # The version comes from the tag rather than from build.yaml, because build.yaml is the file
-      # that is edited to prepare a release and is therefore the one most likely to be wrong at the
+      # that gets edited to prepare a release and is therefore the one most likely to be wrong at the
       # moment the tag is pushed. The tag is the thing being released, so it is the authority.
       - name: "Read the version"
         id: version
@@ -47,11 +47,14 @@ jobs:
           set -euo pipefail
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             version="${{ github.event.inputs.tag }}"
+            tag="v${version}"
           else
-            version="${GITHUB_REF_NAME#v}"
+            tag="${GITHUB_REF_NAME}"
+            version="${tag#v}"
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Releasing $version"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Releasing ${tag}"
 
       - name: "Check the client modules"
         run: "node tools/check-client.mjs"
@@ -66,26 +69,50 @@ jobs:
             -p:Version="${{ steps.version.outputs.version }}" \
             -p:PublishDir="$PWD/artifact/"
 
-      # Jellyfin installs a plugin from a zip whose root holds the assembly. Naming the zip
-      # `<repo>_<version>.zip` is what makes a release show up under the right name in the
-      # dashboard, and it is the name the upgrade path looks for.
+      # Jellyfin installs a plugin from a zip whose root holds the assembly.
+      # <repo>_<version>.zip is the naming the official repository's manifest uses, and it is the
+      # name the release shows up under in the dashboard.
       - name: "Package"
+        id: package
         run: |
           set -euo pipefail
-          mkdir -p "staging/meta.json"
+          mkdir -p staging
           cp artifact/Jellyfin.Plugin.Reko.dll staging/
           cp artifact/Jellyfin.Plugin.Reko.pdb staging/
           cp manifest.json staging/meta.json
           cd staging
           zip -r "../reko_${{ steps.version.outputs.version }}.zip" .
           cd ..
-          ls -l *.zip
+
+          zip="reko_${{ steps.version.outputs.version }}.zip"
+          echo "md5=$(md5sum "$zip" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          ls -l "$zip"
 
       - name: "Create the release"
         uses: "softprops/action-gh-release@v2"
         with:
           name: "Reko ${{ steps.version.outputs.version }}"
-          tag_name: "${{ github.ref_name }}"
+          tag_name: "${{ steps.version.outputs.tag }}"
           body_path: "CHANGELOG.md"
           fail_on_unmatched_files: false
           files: "reko_${{ steps.version.outputs.version }}.zip"
+
+      # A repository manifest is only installable once each version names its own artifact: Jellyfin
+      # downloads `sourceUrl` and verifies `checksum`, and derives neither from anything else. The
+      # checksum cannot be known until the zip exists, so gh-pages is published from here rather
+      # than by hand — a manifest edited by hand is a manifest that eventually names a checksum
+      # which does not match the release it points at, and that failure looks like a corrupt
+      # download rather than a wrong manifest.
+      - name: "Update the repository manifest"
+        env:
+          VERSION: "${{ steps.version.outputs.version }}"
+          MD5: "${{ steps.package.outputs.md5 }}"
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git checkout gh-pages
+          python3 tools/set-manifest-release.py "$VERSION" "$MD5"
+          git commit -am "Publish Reko $VERSION"
+          git push origin gh-pages
