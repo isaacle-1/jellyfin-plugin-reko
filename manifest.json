@@ -15,6 +15,14 @@
         "timestamp": "2026-09-29T00:15:52Z",
         "sourceUrl": "https://github.com/isaacle-1/jellyfin-plugin-reko/releases/download/v1.0.0.0/reko_1.0.0.0.zip",
         "checksum": "ca2dfa3830ce3fa9e5de6b3a76bb2e86"
+      },
+      {
+        "version": "1.0.1.0",
+        "changelog": "Fixes the certifications on every movie and series, and the retry storm behind them. The TMDB models for release_dates and content_ratings read a map keyed by country code; TMDB returns an array of per-country entries, so both failed to deserialise and took out every movie and series title page and every hero with them. Shared cache production is no longer bound to the request that happened to trigger it, so a caller going away no longer cancels work the next caller is waiting on. A cancelled request now returns 499 instead of a logged 500. Movie and series pages no longer request TMDB keywords, which were fetched on every title page and read by nothing.",
+        "targetAbi": "12.1.0.0",
+        "timestamp": "2026-09-29T01:05:00Z",
+        "sourceUrl": "https://github.com/isaacle-1/jellyfin-plugin-reko/releases/download/v1.0.1.0/reko_1.0.1.0.zip",
+        "checksum": "b31063c07f0d2c995876d102b0218050"
       }
     ]
   }
