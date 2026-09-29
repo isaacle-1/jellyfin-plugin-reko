@@ -1,0 +1,16 @@
+# Build output. The plugin ships as a single DLL, so nothing under bin/ or obj/ belongs in the
+# repository, and a checked-in DLL is the single easiest way to ship a stale build by accident.
+bin/
+obj/
+.reko-jscheck/
+
+# Editors
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS noise
+.DS_Store
+Thumbs.db

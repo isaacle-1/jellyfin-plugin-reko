@@ -1,0 +1,67 @@
+---
+name: "Build"
+
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - "**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: "Build and verify"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "Set up .NET"
+        uses: "actions/setup-dotnet@v4"
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: "Set up Node"
+        uses: "actions/setup-node@v4"
+        with:
+          node-version: "22"
+
+      - name: "Restore"
+        run: "dotnet restore Jellyfin.Plugin.Reko.sln"
+
+      # The client is plain ES modules with no build step, so there is nothing to compile. What
+      # there is to check is that the modules still import cleanly and export what the rest of the
+      # code calls: that is the failure mode that has actually bitten this project, and a rename
+      # that leaves a dangling reference passes every other check in the pipeline.
+      - name: "Check the client modules"
+        run: "node tools/check-client.mjs"
+
+      - name: "Build"
+        run: "dotnet build Jellyfin.Plugin.Reko.sln -c Release --no-restore"
+
+      - name: "Publish"
+        run: |
+          mkdir -p artifact
+          dotnet publish Jellyfin.Plugin.Reko/Jellyfin.Plugin.Reko.csproj \
+            -c Release -f net10.0 --no-restore \
+            -p:PublishDir="$PWD/artifact/"
+
+      - name: "Upload the plugin"
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: "reko"
+          path: "artifact/Jellyfin.Plugin.Reko.dll"
+          if-no-files-found: "error"

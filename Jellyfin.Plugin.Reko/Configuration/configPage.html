@@ -1,0 +1,272 @@
+<div id="RekoConfigPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-controller="__plugin/rekoconfigjs">
+  <div data-role="content">
+    <link rel="stylesheet" href="/Reko/config.css" />
+    <div class="content-primary">
+      <form id="RekoConfigForm">
+
+        <div class="verticalSection" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+          <h2 class="sectionTitle">TMDB</h2>
+          <p class="fieldDescription">
+            Reko browses TMDB, so it needs a TMDB API Read Access Token. The token is only ever used by
+            the Jellyfin server; it is never sent to a browser.
+          </p>
+          <div class="inputContainer">
+            <input is="emby-input" type="password" id="TmdbApiKey" name="TmdbApiKey" label="TMDB API Read Access Token" />
+            <div class="fieldDescription">
+              Create one at <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">themoviedb.org/settings/api</a>.
+              Use the <strong>API Read Access Token</strong>, not the older API key.
+            </div>
+          </div>
+          <div class="selectContainer">
+            <select is="emby-select" id="TmdbLanguage" name="TmdbLanguage" label="Language">
+              <option value="en-US">English (United States)</option>
+              <option value="en-GB">English (United Kingdom)</option>
+              <option value="de-DE">Deutsch</option>
+              <option value="es-ES">Español</option>
+              <option value="fr-FR">Français</option>
+              <option value="it-IT">Italiano</option>
+              <option value="nl-NL">Nederlands</option>
+              <option value="pt-BR">Português (Brasil)</option>
+              <option value="pl-PL">Polski</option>
+              <option value="sv-SE">Svenska</option>
+              <option value="da-DK">Dansk</option>
+              <option value="nb-NO">Norsk</option>
+              <option value="fi-FI">Suomi</option>
+              <option value="tr-TR">Türkçe</option>
+              <option value="ru-RU">Русский</option>
+              <option value="uk-UA">Українська</option>
+              <option value="ja-JP">日本語</option>
+              <option value="ko-KR">한국어</option>
+              <option value="zh-CN">中文 (简体)</option>
+              <option value="zh-TW">中文 (繁體)</option>
+              <option value="ar-SA">العربية</option>
+              <option value="hi-IN">हिन्दी</option>
+            </select>
+          </div>
+          <details>
+            <summary class="fieldDescription" style="cursor:pointer">Advanced: use a TMDB mirror or proxy</summary>
+            <div class="inputContainer">
+              <input is="emby-input" type="url" id="TmdbBaseUrl" name="TmdbBaseUrl" label="Alternative API base URL" placeholder="https://api.themoviedb.org/3/" />
+              <div class="fieldDescription">Leave blank to use TMDB directly. Set both fields below if your mirror also serves images.</div>
+            </div>
+            <div class="inputContainer">
+              <input is="emby-input" type="url" id="TmdbImageBaseUrl" name="TmdbImageBaseUrl" label="Alternative image base URL" placeholder="https://image.tmdb.org/t/p/" />
+            </div>
+          </details>
+          <div class="selectContainer">
+            <input is="emby-input" type="text" id="TmdbImageLanguage" name="TmdbImageLanguage" label="Image language (optional)" />
+            <div class="fieldDescription">
+              ISO 639-1 code used when picking title logos, for example <code>en</code> or <code>ja</code>.
+              Leave blank to follow the language above.
+            </div>
+          </div>
+          <div class="selectContainer">
+            <input is="emby-input" type="text" id="TmdbRegion" name="TmdbRegion" label="Region" />
+            <div class="fieldDescription">
+              ISO 3166-1 code used for watch providers and content ratings, for example <code>US</code>,
+              <code>GB</code>, <code>DE</code>, <code>AU</code>.
+            </div>
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="IncludeMovies" name="IncludeMovies" />
+              <span>Include movies</span>
+            </label>
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="IncludeSeries" name="IncludeSeries" />
+              <span>Include series</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="verticalSection" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+          <h2 class="sectionTitle">Overseerr / Jellyseerr</h2>
+          <p class="fieldDescription">
+            Optional. Reko can submit requests for titles that are not in your library, with a season
+            picker for series and live request status.
+          </p>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="EnableSeerr" name="EnableSeerr" />
+              <span>Offer requests through Overseerr or Jellyseerr</span>
+            </label>
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="url" id="SeerrUrl" name="SeerrUrl" label="Seerr URL" placeholder="http://localhost:5055" />
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="password" id="SeerrApiKey" name="SeerrApiKey" label="Seerr API key" />
+            <div class="fieldDescription">
+              In Seerr, open your avatar, choose <strong>Settings &rarr; General &rarr; API Key</strong> and
+              click <strong>Show API Key</strong>. Needs the <code>X-Api-Key</code> permission set to
+              <strong>Admin</strong> so requests are attributed correctly.
+            </div>
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="SeerrMapJellyfinUsers" name="SeerrMapJellyfinUsers" />
+              <span>Attribute requests to the signed-in Jellyfin user</span>
+            </label>
+            <div class="fieldDescription checkboxFieldDescription">
+              Maps each Jellyfin account to its Seerr account so request quotas and history are
+              personal. If CSRF protection is enabled in Seerr, turn it off: Seerr rejects
+              API-key requests with <code>invalid csrf token</code> otherwise.
+            </div>
+          </div>
+        </div>
+
+        <div class="verticalSection" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+          <h2 class="sectionTitle">Home tab</h2>
+          <div class="inputContainer">
+            <input is="emby-input" type="text" id="TabLabel" name="TabLabel" label="Tab label" />
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="EnableTab" name="EnableTab" />
+              <span>Add the tab to the home page</span>
+            </label>
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="HeroCount" name="HeroCount" label="Hero titles" min="1" max="10" />
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="HeroRotationSeconds" name="HeroRotationSeconds" label="Hero rotation (seconds)" min="3" max="60" />
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="ItemsPerRail" name="ItemsPerRail" label="Items per row" min="6" max="40" />
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="text" id="RailOrder" name="RailOrder" label="Row order (optional)" />
+            <div class="fieldDescription">
+              A comma separated list of row ids, for example
+              <code>top10-today,trending-movies,action-adventure</code>. Any row you leave out is appended
+              at the end rather than removed. Leave blank for the default order.
+            </div>
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="EnableHoverPreviews" name="EnableHoverPreviews" />
+              <span>Show a preview when hovering a card</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="verticalSection" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+          <h2 class="sectionTitle">Personalisation</h2>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="EnableContinueWatching" name="EnableContinueWatching" />
+              <span>Show a Continue Watching row</span>
+            </label>
+            <div class="fieldDescription checkboxFieldDescription">
+              Built from your own Jellyfin resume data. Series are shown when you are part way through an
+              episode.
+            </div>
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="EnablePersonalizedRows" name="EnablePersonalizedRows" />
+              <span>Personalise rows from your watch history</span>
+            </label>
+            <div class="fieldDescription checkboxFieldDescription">
+              Uses TMDB recommendations for what you watched most recently, plus rows built from the genres
+              you watch most. Nothing leaves your server.
+            </div>
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="MinimumWatchedForPersonalized" name="MinimumWatchedForPersonalized" label="Minimum watched titles" min="1" max="50" />
+            <div class="fieldDescription">How much history is needed before personalised rows appear.</div>
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="ContinueWatchingCount" name="ContinueWatchingCount" label="Continue Watching items" min="4" max="30" />
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="PersonalizedRailCount" name="PersonalizedRailCount" label="Personalised rows" min="1" max="6" />
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="HideWatchedFromPersonalized" name="HideWatchedFromPersonalized" />
+              <span>Hide titles you already have from personalised rows</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="verticalSection" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+          <h2 class="sectionTitle">Title pages</h2>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="EnableSearch" name="EnableSearch" />
+              <span>Show the search field</span>
+            </label>
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="ShowCast" name="ShowCast" />
+              <span>Show cast</span>
+            </label>
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="ShowTrailers" name="ShowTrailers" />
+              <span>Show trailers</span>
+            </label>
+            <div class="fieldDescription checkboxFieldDescription">
+              The YouTube player is only loaded when you press play, so nothing is fetched from Google
+              until you do.
+            </div>
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="ShowWatchProviders" name="ShowWatchProviders" />
+              <span>Show where to watch</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="verticalSection" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+          <h2 class="sectionTitle">Caching and diagnostics</h2>
+          <div class="fieldDescription">
+            Rails are cached so a row costs one TMDB request no matter how many users open the tab.
+            TMDB returns no rate limit headers, so Reko budgets its own requests.
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="CacheMinutes" name="CacheMinutes" label="Row cache (minutes)" min="5" max="1440" />
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="TrendingCacheMinutes" name="TrendingCacheMinutes" label="Trending cache (minutes)" min="5" max="720" />
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="DetailCacheHours" name="DetailCacheHours" label="Title page cache (hours)" min="1" max="168" />
+          </div>
+          <div class="inputContainer">
+            <input is="emby-input" type="number" id="PersonalizedCacheMinutes" name="PersonalizedCacheMinutes" label="Taste profile cache (minutes)" min="15" max="10080" />
+            <div class="fieldDescription">
+              How long a computed profile of your viewing history is reused. It is the most expensive
+              thing Reko computes, so it is cached separately and for much longer than the rows.
+            </div>
+          </div>
+          <div class="checkboxContainer checkboxContainer-withDescription">
+            <label is="emby-checkbox-label" class="emby-checkbox-label">
+              <input is="emby-checkbox" type="checkbox" id="EnableDebugLogging" name="EnableDebugLogging" />
+              <span>Verbose logging</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+            <span>Save</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script type="text/javascript">
+    window.RekoConfig = { pluginUniqueId: 'b3f19d2c-7a41-4e58-9c06-1d5a8e3f2b47' };
+  </script>
+</div>

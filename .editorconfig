@@ -1,0 +1,94 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,js,mjs,css,html,md}]
+indent_size = 2
+
+[*.{csproj,props,targets,config}]
+indent_size = 2
+
+[*.cs]
+
+# --- StyleCop -------------------------------------------------------------------
+# Jellyfin's own sources put usings outside the namespace and carry no per-file licence
+# header, so these two rules are off by default there too.
+dotnet_diagnostic.SA1200.severity = none
+dotnet_diagnostic.SA1633.severity = none
+dotnet_diagnostic.SA1649.severity = none
+dotnet_diagnostic.SA1402.severity = none
+dotnet_diagnostic.SA1101.severity = none
+dotnet_diagnostic.SA1309.severity = none
+dotnet_diagnostic.SA1413.severity = none
+# Member ordering: keeping accessors next to their subject reads better than grouping by
+# static/instance or by access modifier.
+dotnet_diagnostic.SA1201.severity = none
+dotnet_diagnostic.SA1202.severity = none
+dotnet_diagnostic.SA1204.severity = none
+dotnet_diagnostic.SA1214.severity = none
+dotnet_diagnostic.SA1216.severity = none
+# "Gets or sets a value indicating whether" on every bool. A bool named IsConfigured is
+# already unambiguous without the prefix.
+dotnet_diagnostic.SA1623.severity = none
+
+# --- Design analyzers that fight the plugin SDK ------------------------------------
+# CA1032: Exception ctors. The standard parameterless/serialization ctors are dead weight here.
+dotnet_diagnostic.CA1032.severity = none
+# CA1056: URI-typed strings. Plugin configuration is XML-serialised, and System.Uri has no
+# parameterless-friendly round trip that survives BasePluginConfiguration's XML writer.
+dotnet_diagnostic.CA1056.severity = none
+# CA2227/CA1002: Collection setters. BasePluginConfiguration round-trips these through XML.
+dotnet_diagnostic.CA2227.severity = none
+dotnet_diagnostic.CA1002.severity = none
+# CA1819: Array properties, for the same XML round-trip reason.
+dotnet_diagnostic.CA1819.severity = none
+# CA1707: Identifiers should not contain underscores. TMDB/Seerr field names map cleanly
+# with underscores and the JSON property names are fixed.
+dotnet_diagnostic.CA1707.severity = none
+# CA2007/CA1062: Caller-validation and ConfigureAwait. Handled explicitly where it matters.
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1062.severity = none
+# CA1861: Prefer static readonly for constant arrays. Not meaningful at this size.
+dotnet_diagnostic.CA1861.severity = none
+# CA1054: URI-typed parameters. The image base URL is a prefix that gets concatenated with a size
+# token and a file path, which is string work, not Uri work.
+dotnet_diagnostic.CA1054.severity = none
+# CA1055: URI-typed returns. These are serialised straight into JSON for the browser. A Uri would
+# round-trip through System.Uri and could normalise a path in a way TMDB does not expect.
+dotnet_diagnostic.CA1055.severity = none
+# CA1305/CA1304: IFormatProvider. Handled with CultureInfo.InvariantCulture where it matters.
+dotnet_diagnostic.CA1305.severity = none
+dotnet_diagnostic.CA1304.severity = none
+dotnet_diagnostic.CA1310.severity = none
+dotnet_diagnostic.CA1311.severity = none
+# CA1848/CA2254: LoggerMessage + logging templates. Jellyfin's own code uses these too.
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA2254.severity = none
+# CA5350/CA5379: Weak crypto. The manifest checksum format is defined by Jellyfin as MD5.
+dotnet_diagnostic.CA5350.severity = none
+dotnet_diagnostic.CA5351.severity = none
+# CA1724: every Jellyfin plugin's main class is named Plugin inside the Jellyfin.Plugin
+# namespace. Renaming either is not an option.
+dotnet_diagnostic.CA1724.severity = none
+# CA1822: helpers that read Plugin.Instance do not touch instance state. Marking them static
+# would hide that they are configuration-dependent.
+dotnet_diagnostic.CA1822.severity = none
+# CA1031: the TTL cache must observe any failure from the factory in order to evict the entry.
+dotnet_diagnostic.CA1031.severity = none
+
+# CA1024: "use a property instead of a method". GetMovieGenresCached/GetTvGenresCached are methods
+# deliberately, to sit alongside their async counterparts that must warm the same cache.
+dotnet_diagnostic.CA1024.severity = none
+# CA1873: passing ex.Message or a computed value as a logging argument. Reko's logging here is
+# low-frequency (a rail failing, an index rebuild) and the values are already in hand.
+dotnet_diagnostic.CA1873.severity = none
+# CA1849/CA2213: Cancel/CancelAsync and disposable fields in a BackgroundService. The library index
+# service manages its own lifetime explicitly in its Dispose override.
+dotnet_diagnostic.CA1849.severity = none
+dotnet_diagnostic.CA2213.severity = none

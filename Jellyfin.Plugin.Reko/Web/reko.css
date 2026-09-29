@@ -1,0 +1,1401 @@
+/*
+ * Reko's styles.
+ *
+ * Jellyfin 12 derives every theme from a shared base of CSS variables, so most of this file reads
+ * those variables rather than hard-coding colours. That means Reko follows the active theme, follows
+ * the light/dark switch, and inherits a user's custom theme, with no theme-specific rules at all.
+ *
+ * Everything is namespaced under .reko* so nothing here can reach Jellyfin's own components, and the
+ * only global rules are a small number of keyframes.
+ */
+
+.rekoApp {
+    --reko-accent: #e50914;
+    --reko-gap: 3.2vw;
+    --reko-rail-height: 1fr;
+    --reko-radius: 6px;
+    --reko-surface: rgba(20, 20, 20, 0.72);
+    --reko-surface-solid: #141414;
+    --reko-text: #fff;
+    --reko-text-dim: rgba(255, 255, 255, 0.72);
+    --reko-text-faint: rgba(255, 255, 255, 0.5);
+    --reko-border: rgba(255, 255, 255, 0.14);
+    --reko-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: 60vh;
+    color: var(--reko-text);
+    font-family: inherit;
+}
+
+/* Light themes need the opposite surfaces, so the variables are re-pointed rather than every rule
+   being duplicated. */
+.skinLight .rekoApp,
+[data-theme='light'] .rekoApp {
+    --reko-surface: rgba(255, 255, 255, 0.86);
+    --reko-surface-solid: #f6f6f6;
+    --reko-text: #141414;
+    --reko-text-dim: rgba(20, 20, 20, 0.74);
+    --reko-text-faint: rgba(20, 20, 20, 0.55);
+    --reko-border: rgba(0, 0, 0, 0.12);
+    --reko-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.rekoApp *,
+.rekoApp *::before,
+.rekoApp *::after {
+    box-sizing: border-box;
+}
+
+.rekoHost,
+.rekoPage {
+    display: block;
+    width: 100%;
+}
+
+/* Text that a screen reader needs and a person does not. */
+.rekoHidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Sticky header                                                                                  */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoHeader {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    padding: 0.9em 4vw;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent);
+}
+
+.skinLight .rekoHeader,
+[data-theme='light'] .rekoHeader {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.92), transparent);
+}
+
+.rekoHeaderTitle {
+    font-size: 1.35em;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--reko-accent);
+}
+
+.rekoHeaderSearch,
+.rekoSearchInput {
+    min-width: 0;
+    flex: 1 1 auto;
+    max-width: 22em;
+    padding: 0.5em 0.9em;
+    border: 1px solid var(--reko-border);
+    border-radius: 999px;
+    background: var(--reko-surface);
+    color: var(--reko-text);
+    font: inherit;
+    font-size: 0.95em;
+}
+
+.rekoHeaderSearch:focus,
+.rekoSearchInput:focus {
+    outline: 2px solid var(--reko-accent);
+    outline-offset: 1px;
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Hero                                                                                           */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoHero {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    min-height: min(70vh, 40em);
+    margin-bottom: 1em;
+    padding: 0 4vw;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.rekoHeroArt {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background-color: #0b0b0b;
+    background-position: center 22%;
+    background-size: cover;
+    transition: opacity 400ms ease;
+}
+
+.rekoHero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        linear-gradient(to top, rgba(0, 0, 0, 0.94) 6%, rgba(0, 0, 0, 0.55) 45%, rgba(0, 0, 0, 0.25) 100%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+}
+
+.skinLight .rekoHero::after,
+[data-theme='light'] .rekoHero::after {
+    background: linear-gradient(to top, rgba(245, 245, 245, 0.96) 6%, rgba(245, 245, 245, 0.5) 50%, rgba(245, 245, 245, 0.2) 100%);
+}
+
+.rekoHeroContent {
+    max-width: min(38em, 60%);
+    padding: 2em 0 3.5em;
+}
+
+.rekoHeroTitle {
+    margin: 0 0 0.25em;
+    font-size: clamp(2.2em, 5.2vw, 3.6em);
+    font-weight: 800;
+    line-height: 1.05;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+}
+
+.rekoHeroLogo {
+    display: block;
+    max-width: min(28em, 100%);
+    max-height: 7em;
+    margin-bottom: 0.6em;
+    object-fit: contain;
+    object-position: left bottom;
+    filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.6));
+}
+
+.rekoHeroMeta {
+    margin-bottom: 0.8em;
+    color: var(--reko-text-dim);
+    font-size: 1.02em;
+}
+
+.rekoHeroOverview {
+    display: -webkit-box;
+    margin: 0 0 1.2em;
+    overflow: hidden;
+    color: var(--reko-text-dim);
+    font-size: 1.02em;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
+.rekoHeroActions,
+.rekoTitleActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6em;
+}
+
+.rekoHeroBadges {
+    margin-bottom: 0.8em;
+}
+
+.rekoHeroDots {
+    position: absolute;
+    right: 4vw;
+    bottom: 3.4em;
+    display: flex;
+    gap: 0.45em;
+}
+
+.rekoHeroDot {
+    width: 0.55em;
+    height: 0.55em;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.42);
+    cursor: pointer;
+    transition: background 200ms ease, transform 200ms ease;
+}
+
+.rekoHeroDot.is-active {
+    background: var(--reko-accent);
+    transform: scale(1.25);
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Buttons                                                                                        */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    padding: 0.62em 1.4em;
+    border: 1px solid transparent;
+    border-radius: var(--reko-radius);
+    font: inherit;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+
+.rekoButton.is-primary {
+    background: #fff;
+    color: #000;
+}
+
+.rekoButton.is-primary:hover {
+    background: rgba(255, 255, 255, 0.82);
+}
+
+.skinLight .rekoButton.is-primary,
+[data-theme='light'] .rekoButton.is-primary {
+    background: #141414;
+    color: #fff;
+}
+
+.rekoButton.is-secondary {
+    border-color: var(--reko-border);
+    background: var(--reko-surface);
+    color: var(--reko-text);
+}
+
+.rekoButton.is-secondary:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.rekoButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.rekoButton:focus-visible,
+.rekoCard:focus-visible,
+.rekoChip:focus-visible,
+.rekoRailArrow:focus-visible,
+.rekoSeasonTab:focus-visible,
+.rekoCastCard:focus-visible,
+.rekoBackLink:focus-visible {
+    outline: 2px solid var(--reko-accent);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Rails                                                                                          */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoRail {
+    margin: 1.6em 0 2.4em;
+}
+
+.rekoRailHeader {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7em;
+    padding: 0 4vw 0.5em;
+}
+
+.rekoRailTitle {
+    margin: 0;
+    font-size: clamp(1.05em, 2vw, 1.45em);
+    font-weight: 700;
+}
+
+.rekoRailTag {
+    padding: 0.15em 0.6em;
+    border-radius: 999px;
+    background: var(--reko-accent);
+    color: #fff;
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.rekoRailViewport {
+    position: relative;
+}
+
+.rekoRailStrip {
+    display: flex;
+    gap: 0.7vw;
+    padding: 0.4em 4vw 0.8em;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+
+    /* Without this the snap positions are the scrollport edges, so the first card of every row
+       snaps flush to the edge of the screen and the row's own left padding — and with it the "1"
+       of a Top 10 row — is scrolled out of view as soon as anything nudges the row. */
+    scroll-padding-inline: 4vw;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+}
+
+.rekoRailStrip::-webkit-scrollbar {
+    display: none;
+}
+
+.rekoRailArrow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    display: none;
+    align-items: center;
+    width: 3.4vw;
+    max-width: 4em;
+    min-width: 2.6em;
+    border: 0;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 2.2em;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 180ms ease;
+}
+
+.rekoRailArrow.is-prev {
+    left: 0;
+}
+
+.rekoRailArrow.is-next {
+    right: 0;
+}
+
+.rekoRailArrow.is-hidden {
+    display: none !important;
+}
+
+.rekoRailViewport:hover .rekoRailArrow,
+.rekoRailArrow:focus-visible {
+    opacity: 1;
+}
+
+.rekoRailMessage,
+.rekoError {
+    padding: 1.4em 4vw;
+    color: var(--reko-text-dim);
+}
+
+.rekoSkeletonCard {
+    flex: 0 0 auto;
+    width: 12vw;
+    max-width: 11em;
+    aspect-ratio: 2 / 3;
+    border-radius: var(--reko-radius);
+    background: linear-gradient(100deg, rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.13) 50%, rgba(255, 255, 255, 0.05) 70%);
+    background-size: 220% 100%;
+    animation: rekoShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes rekoShimmer {
+    from { background-position: 130% 0; }
+    to { background-position: -30% 0; }
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Cards                                                                                          */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoCard {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    width: 12vw;
+    max-width: 11em;
+    padding: 0;
+    border: 0;
+    border-radius: var(--reko-radius);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 220ms ease;
+}
+
+.rekoCardBody {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.rekoCard:hover,
+.rekoCard:focus-visible {
+    transform: scale(1.06);
+    z-index: 2;
+    box-shadow: var(--reko-shadow);
+}
+
+.rekoCardArt {
+    position: relative;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    border-radius: var(--reko-radius);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.rekoCardImg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rekoCardPlaceholder,
+.rekoCastPlaceholder,
+.rekoEpisodePlaceholder,
+.rekoPersonPlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--reko-text-faint);
+    font-size: 2em;
+    font-weight: 700;
+}
+
+.rekoCardInfo {
+    padding: 0.5em 0.15em 0;
+}
+
+.rekoCardTitle {
+    overflow: hidden;
+    font-size: 0.9em;
+    font-weight: 600;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rekoCardSub {
+    color: var(--reko-text-faint);
+    font-size: 0.8em;
+}
+
+.rekoCardBadges {
+    position: absolute;
+    top: 0.4em;
+    left: 0.4em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25em;
+    max-width: calc(100% - 0.8em);
+}
+
+.rekoCardProgress {
+    position: absolute;
+    right: 0.3em;
+    bottom: 0.3em;
+    left: 0.3em;
+    height: 3px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.rekoCardProgressBar {
+    height: 100%;
+    background: var(--reko-accent);
+}
+
+.rekoBadge {
+    display: inline-block;
+    padding: 0.16em 0.5em;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    font-size: 0.66em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.rekoBadge.is-library,
+.rekoBadge.is-available,
+.rekoBadge.is-request-completed {
+    background: #2e7d32;
+}
+
+.rekoBadge.is-pending,
+.rekoBadge.is-request-pending,
+.rekoBadge.is-request-approved,
+.rekoBadge.is-downloading {
+    background: #ef6c00;
+}
+
+.rekoBadge.is-partially-available {
+    background: #1565c0;
+}
+
+.rekoBadge.is-blocked,
+.rekoBadge.is-request-declined,
+.rekoBadge.is-removed,
+.rekoBadge.is-request-failed {
+    background: #c62828;
+}
+
+/* Ranked Top 10 rows */
+/* A ranked row lays the number out beside the poster rather than behind it.
+
+   Netflix's numbers overlap the artwork, which is easy to copy and very easy to get wrong: the rows
+   are horizontal scrollers, so a card at the left of the viewport has already been scrolled half out
+   of view, and a number drawn to the left of the poster spends most of its life clipped or painted
+   over by the previous card's poster. Laying them out as flex siblings costs a little of the
+   overlap and makes the number always legible. */
+.rekoCard.is-ranked {
+    align-items: flex-end;
+    width: 15vw;
+    max-width: 15em;
+}
+
+.rekoCardRank {
+    flex: 0 0 auto;
+    margin: 0 0.06em 0 0;
+    color: #6f6f6f;
+    font-size: 5.6em;
+    font-weight: 800;
+    line-height: 0.72;
+    letter-spacing: -0.04em;
+    pointer-events: none;
+    user-select: none;
+}
+
+.skinLight .rekoCardRank,
+[data-theme='light'] .rekoCardRank {
+    color: #b4b4b4;
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Hover preview                                                                                  */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoPreview {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 3000;
+    display: none;
+    width: 22em;
+    max-width: 92vw;
+    overflow: hidden;
+    border: 1px solid var(--reko-border);
+    border-radius: 10px;
+    background: var(--reko-surface-solid);
+    box-shadow: var(--reko-shadow);
+}
+
+.rekoPreview.is-open {
+    display: block;
+}
+
+.rekoPreviewArt {
+    aspect-ratio: 16 / 9;
+    background-position: center;
+    background-size: cover;
+}
+
+.rekoPreviewBody {
+    padding: 0.85em 1em 1em;
+}
+
+.rekoPreviewTitle {
+    margin-bottom: 0.3em;
+    font-size: 1.05em;
+    font-weight: 700;
+}
+
+.rekoPreviewMeta {
+    margin-bottom: 0.5em;
+    color: var(--reko-text-faint);
+    font-size: 0.82em;
+}
+
+.rekoPreviewOverview {
+    display: -webkit-box;
+    margin: 0 0 0.6em;
+    overflow: hidden;
+    color: var(--reko-text-dim);
+    font-size: 0.86em;
+    line-height: 1.5;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
+.rekoPreviewGenres {
+    margin-bottom: 0.6em;
+    color: var(--reko-text-faint);
+    font-size: 0.8em;
+}
+
+.rekoPreviewBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3em;
+    margin-bottom: 0.7em;
+}
+
+.rekoPreviewActions {
+    display: flex;
+    gap: 0.5em;
+}
+
+.rekoPreviewAction {
+    padding: 0.35em 0.8em;
+    border: 1px solid var(--reko-border);
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Title page                                                                                     */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoTitleHeader {
+    position: relative;
+    margin-bottom: 2em;
+    padding: 3em 4vw 2em;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.rekoTitleArt {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background-position: center 20%;
+    background-size: cover;
+    filter: brightness(0.55);
+}
+
+.rekoTitleHeaderBody {
+    max-width: min(46em, 100%);
+}
+
+.rekoTitleName {
+    margin: 0 0 0.2em;
+    font-size: clamp(1.9em, 4.4vw, 3em);
+    font-weight: 800;
+    line-height: 1.08;
+}
+
+.rekoTitleLogo {
+    display: block;
+    max-width: min(26em, 100%);
+    max-height: 6em;
+    margin-bottom: 0.5em;
+    object-fit: contain;
+    object-position: left bottom;
+    filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.6));
+}
+
+.rekoTitleOriginal,
+.rekoTitleMeta {
+    color: var(--reko-text-dim);
+    font-size: 0.95em;
+}
+
+.rekoTitleTagline {
+    margin: 0.8em 0 0;
+    color: var(--reko-text-dim);
+    font-style: italic;
+}
+
+.rekoTitleOverview {
+    margin: 0.9em 0;
+    line-height: 1.6;
+}
+
+.rekoTitleActions {
+    margin: 1em 0;
+}
+
+.rekoChipRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    margin: 0.6em 0;
+}
+
+.rekoChip {
+    padding: 0.25em 0.75em;
+    border: 1px solid var(--reko-border);
+    border-radius: 999px;
+    background: none;
+    color: var(--reko-text-dim);
+    font: inherit;
+    font-size: 0.82em;
+    cursor: pointer;
+}
+
+.rekoChip:hover {
+    border-color: var(--reko-accent);
+    color: var(--reko-text);
+}
+
+.rekoColumns {
+    display: grid;
+    grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr);
+    gap: 2.4em;
+    padding: 0 4vw;
+}
+
+@media (max-width: 60em) {
+    .rekoColumns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.rekoColumnMain,
+.rekoColumnSide {
+    min-width: 0;
+}
+
+.rekoSection,
+.rekoSeasons,
+.rekoCast,
+.rekoProviders,
+.rekoBiography {
+    margin: 1.6em 0;
+    padding: 0 4vw;
+}
+
+.rekoSectionTitle {
+    margin: 0 0 0.7em;
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+.rekoSection > .rekoRail {
+    margin: 0;
+}
+
+.rekoSection > .rekoRail .rekoRailHeader {
+    display: none;
+}
+
+.rekoBackLink {
+    display: inline-block;
+    margin: 1em 0 0 4vw;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--reko-text-dim);
+    font: inherit;
+    cursor: pointer;
+}
+
+.rekoBackLink:hover {
+    color: var(--reko-text);
+}
+
+.rekoFacts {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.35em 1em;
+    margin: 0 0 1.2em;
+    font-size: 0.9em;
+}
+
+.rekoFacts dt {
+    color: var(--reko-text-faint);
+}
+
+.rekoFacts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.rekoProgress {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6em;
+    font-size: 0.85em;
+}
+
+.rekoProgressBar {
+    display: block;
+    width: 6em;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--reko-accent);
+}
+
+.rekoAttribution {
+    margin-top: 0.6em;
+    color: var(--reko-text-faint);
+    font-size: 0.72em;
+}
+
+/* Trailer */
+.rekoTrailer {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #000;
+}
+
+.rekoTrailerFrame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.rekoTrailerPlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    border: 0;
+    background: rgba(0, 0, 0, 0.28);
+    color: #fff;
+    cursor: pointer;
+}
+
+.rekoTrailerPlay:hover {
+    background: rgba(0, 0, 0, 0.16);
+}
+
+.rekoTrailerGlyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.2em;
+    height: 4.2em;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    font-size: 1.6em;
+}
+
+/* Seasons */
+.rekoSeasonTabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    margin-bottom: 1em;
+}
+
+.rekoSeasonTab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    padding: 0.4em 0.9em;
+    border: 1px solid var(--reko-border);
+    border-radius: 999px;
+    background: none;
+    color: var(--reko-text-dim);
+    font: inherit;
+    font-size: 0.86em;
+    cursor: pointer;
+}
+
+.rekoSeasonTab.is-active {
+    border-color: var(--reko-accent);
+    background: var(--reko-accent);
+    color: #fff;
+}
+
+.rekoSeasonDot {
+    width: 0.45em;
+    height: 0.45em;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.7;
+}
+
+.rekoEpisodes {
+    display: grid;
+    gap: 1em;
+}
+
+.rekoEpisode {
+    display: grid;
+    grid-template-columns: minmax(0, 15em) minmax(0, 1fr);
+    gap: 1em;
+}
+
+@media (max-width: 48em) {
+    .rekoEpisode {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.rekoEpisodeStill {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--reko-radius);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.rekoEpisodeStill img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rekoEpisodeHead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6em;
+    margin-bottom: 0.35em;
+}
+
+.rekoEpisodeNumber {
+    padding: 0.1em 0.45em;
+    border-radius: 3px;
+    background: var(--reko-accent);
+    color: #fff;
+    font-size: 0.72em;
+    font-weight: 700;
+}
+
+.rekoEpisodeName {
+    margin: 0;
+    font-size: 1.02em;
+}
+
+.rekoEpisodeMeta {
+    color: var(--reko-text-faint);
+    font-size: 0.82em;
+}
+
+.rekoEpisodeOverview {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    color: var(--reko-text-dim);
+    font-size: 0.9em;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
+/* Cast */
+.rekoCastStrip {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8em, 1fr));
+    gap: 1em;
+}
+
+.rekoCastCard {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+}
+
+.rekoCastImage {
+    aspect-ratio: 2 / 3;
+    margin-bottom: 0.45em;
+    overflow: hidden;
+    border-radius: var(--reko-radius);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.rekoCastImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rekoCastName {
+    font-size: 0.86em;
+    font-weight: 600;
+}
+
+.rekoCastRole {
+    color: var(--reko-text-faint);
+    font-size: 0.78em;
+}
+
+/* Watch providers */
+.rekoProviderRow {
+    margin-bottom: 0.9em;
+}
+
+.rekoProviderLabel {
+    display: block;
+    margin-bottom: 0.4em;
+    color: var(--reko-text-faint);
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.rekoProviderLogos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+}
+
+.rekoProvider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6em;
+    height: 2.6em;
+    overflow: hidden;
+    border: 1px solid var(--reko-border);
+    border-radius: var(--reko-radius);
+    background: #fff;
+    font-size: 0.6em;
+    text-align: center;
+}
+
+.rekoProvider img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Search and browse                                                                              */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoSearch {
+    padding-bottom: 3em;
+}
+
+.rekoSearchBar {
+    display: flex;
+    gap: 0.5em;
+    padding: 1em 4vw 0.4em;
+}
+
+.rekoSearchInput {
+    max-width: none;
+    font-size: 1.05em;
+}
+
+.rekoSearchClear {
+    width: 2.4em;
+    border: 1px solid var(--reko-border);
+    border-radius: 50%;
+    background: var(--reko-surface);
+    color: var(--reko-text);
+    font-size: 1.2em;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.rekoSearchStatus,
+.rekoBrowseStatus {
+    padding: 0.5em 4vw;
+    color: var(--reko-text-faint);
+    font-size: 0.86em;
+}
+
+.rekoGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
+    gap: 1.2em 0.8em;
+    padding: 0.6em 4vw 1.4em;
+}
+
+.rekoGrid .rekoCard {
+    width: 100%;
+    max-width: none;
+}
+
+.rekoBrowseHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 1em 4vw 0.4em;
+}
+
+.rekoPageTitle {
+    margin: 0;
+    font-size: clamp(1.4em, 3.2vw, 2.2em);
+    font-weight: 800;
+}
+
+.rekoSelect {
+    padding: 0.45em 0.8em;
+    border: 1px solid var(--reko-border);
+    border-radius: var(--reko-radius);
+    background: var(--reko-surface-solid);
+    color: var(--reko-text);
+    font: inherit;
+    font-size: 0.9em;
+}
+
+.rekoLoadMore {
+    display: block;
+    margin: 0 auto 3em;
+}
+
+.rekoPersonHead {
+    text-align: center;
+}
+
+.rekoPersonImage {
+    width: 10em;
+    margin: 0 auto 1em;
+    overflow: hidden;
+    border-radius: var(--reko-radius);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.rekoPersonImage img {
+    width: 100%;
+    height: auto;
+}
+
+.rekoBiography p {
+    line-height: 1.65;
+    color: var(--reko-text-dim);
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Modals                                                                                         */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoModalBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4vh 4vw;
+    background: rgba(0, 0, 0, 0.68);
+}
+
+.rekoModal {
+    width: min(34em, 100%);
+    max-height: 92vh;
+    overflow-y: auto;
+    border: 1px solid var(--reko-border);
+    border-radius: 12px;
+    background: var(--reko-surface-solid, #141414);
+    color: var(--reko-text, #fff);
+    box-shadow: var(--reko-shadow, 0 10px 40px rgba(0, 0, 0, 0.6));
+}
+
+.rekoModalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 1em 1.2em 0.6em;
+}
+
+.rekoModalTitle {
+    margin: 0;
+    font-size: 1.15em;
+    font-weight: 700;
+}
+
+.rekoModalClose {
+    padding: 0 0.3em;
+    border: 0;
+    background: none;
+    color: var(--reko-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: 1.6em;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.rekoModalBody {
+    padding: 0 1.2em;
+}
+
+.rekoModalMessage {
+    margin: 0.8em 0;
+    color: var(--reko-text-dim, rgba(255, 255, 255, 0.7));
+    line-height: 1.5;
+}
+
+.rekoModalMessage.is-success {
+    color: #66bb6a;
+}
+
+.rekoModalMessage.is-error {
+    color: #ef5350;
+}
+
+.rekoModalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6em;
+    padding: 1.2em;
+}
+
+.rekoSeasonList {
+    display: grid;
+    gap: 0.3em;
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.rekoSeasonRow {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.7em;
+    padding: 0.5em 0.6em;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.rekoSeasonRow:hover {
+    background: rgba(127, 127, 127, 0.16);
+}
+
+.rekoSeasonName {
+    font-weight: 600;
+}
+
+.rekoSeasonMeta {
+    color: var(--reko-text-faint, rgba(255, 255, 255, 0.5));
+    font-size: 0.82em;
+    white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Notices, banners, loading                                                                     */
+/* -------------------------------------------------------------------------------------------- */
+
+.rekoBanner {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    margin: 0 4vw 0.6em;
+    padding: 0.7em 1em;
+    border: 1px solid #ef6c00;
+    border-radius: var(--reko-radius, 6px);
+    background: rgba(239, 108, 0, 0.14);
+    color: inherit;
+    font-size: 0.9em;
+}
+
+.rekoBanner span {
+    flex: 1 1 auto;
+}
+
+.rekoBanner button {
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: 1.3em;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.rekoNotice {
+    max-width: 44em;
+    margin: 6vh auto;
+    padding: 1.6em 2em;
+    border: 1px solid var(--reko-border, rgba(255, 255, 255, 0.14));
+    border-radius: 10px;
+    background: var(--reko-surface, rgba(20, 20, 20, 0.72));
+    text-align: center;
+}
+
+.rekoNotice h2 {
+    margin-top: 0;
+    font-size: 1.3em;
+}
+
+.rekoNotice p {
+    line-height: 1.6;
+}
+
+.rekoNotice.is-error {
+    border-color: #c62828;
+}
+
+.rekoNoticeMeta {
+    color: var(--reko-text-faint, rgba(255, 255, 255, 0.5));
+    font-size: 0.85em;
+}
+
+.rekoSpinner {
+    width: 2.4em;
+    height: 2.4em;
+    margin: 4vh auto;
+    border: 3px solid rgba(127, 127, 127, 0.3);
+    border-top-color: var(--reko-accent, #e50914);
+    border-radius: 50%;
+    animation: rekoSpin 800ms linear infinite;
+}
+
+@keyframes rekoSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* The injected tab and drawer entry                                                              */
+/* -------------------------------------------------------------------------------------------- */
+
+.emby-tab-button.rekoTabButton {
+    white-space: nowrap;
+}
+
+[data-reko='drawer'] {
+    /* Nothing visual: the entry is a clone of Jellyfin's own list item, so it inherits the theme. */
+    cursor: pointer;
+}
+
+/* The hero sits under Jellyfin's own page chrome, which is absolutely positioned. These two rules
+   keep the tab content from being clipped by it. */
+.rekoPanel {
+    padding-bottom: 4vh;
+
+    /* The tab paints its own background rather than leaving it to the theme. The Modern app bar is
+       translucent, so on a page that does not paint, the app bar's backdrop is whatever the body
+       happens to be — which on a default server is white, and reads as a bright stripe above a
+       black page. */
+    background: #000;
+}
+
+.skinLight .rekoPanel,
+[data-theme='light'] .rekoPanel {
+    background: #f6f6f6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rekoCard,
+    .rekoHeroDot,
+    .rekoButton,
+    .rekoPreview {
+        transition: none;
+    }
+
+    .rekoSkeletonCard,
+    .rekoSpinner {
+        animation: none;
+    }
+
+    .rekoRailStrip {
+        scroll-behavior: auto;
+    }
+}

@@ -1,0 +1,91 @@
+---
+name: "Release"
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release, without the leading v"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "Set up .NET"
+        uses: "actions/setup-dotnet@v4"
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: "Set up Node"
+        uses: "actions/setup-node@v4"
+        with:
+          node-version: "22"
+
+      # The version comes from the tag rather than from build.yaml, because build.yaml is the file
+      # that is edited to prepare a release and is therefore the one most likely to be wrong at the
+      # moment the tag is pushed. The tag is the thing being released, so it is the authority.
+      - name: "Read the version"
+        id: version
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.tag }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Releasing $version"
+
+      - name: "Check the client modules"
+        run: "node tools/check-client.mjs"
+
+      - name: "Restore"
+        run: "dotnet restore Jellyfin.Plugin.Reko.sln"
+
+      - name: "Publish"
+        run: |
+          dotnet publish Jellyfin.Plugin.Reko/Jellyfin.Plugin.Reko.csproj \
+            -c Release -f net10.0 --no-restore \
+            -p:Version="${{ steps.version.outputs.version }}" \
+            -p:PublishDir="$PWD/artifact/"
+
+      # Jellyfin installs a plugin from a zip whose root holds the assembly. Naming the zip
+      # `<repo>_<version>.zip` is what makes a release show up under the right name in the
+      # dashboard, and it is the name the upgrade path looks for.
+      - name: "Package"
+        run: |
+          set -euo pipefail
+          mkdir -p "staging/meta.json"
+          cp artifact/Jellyfin.Plugin.Reko.dll staging/
+          cp artifact/Jellyfin.Plugin.Reko.pdb staging/
+          cp manifest.json staging/meta.json
+          cd staging
+          zip -r "../reko_${{ steps.version.outputs.version }}.zip" .
+          cd ..
+          ls -l *.zip
+
+      - name: "Create the release"
+        uses: "softprops/action-gh-release@v2"
+        with:
+          name: "Reko ${{ steps.version.outputs.version }}"
+          tag_name: "${{ github.ref_name }}"
+          body_path: "CHANGELOG.md"
+          fail_on_unmatched_files: false
+          files: "reko_${{ steps.version.outputs.version }}.zip"

@@ -1,0 +1,36 @@
+/*
+ * Reko configuration page tweaks.
+ *
+ * The page itself is ordinary dashboard markup and inherits the dashboard's styling. This file only
+ * handles the one thing generic markup cannot: a "loading" state that keeps the form out of the way
+ * until the configuration has been fetched, so a slow read never shows a form full of defaults that
+ * a careless save would then persist.
+ */
+
+#RekoConfigPage.is-loading form {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+#RekoConfigPage .sectionTitle {
+    margin-top: 0;
+}
+
+#RekoConfigPage .checkboxFieldDescription {
+    margin-left: 2.1em;
+    margin-top: 0.2em;
+}
+
+#RekoConfigPage input[type='password'] {
+    font-family: inherit;
+}
+
+#RekoConfigPage .verticalSection {
+    transition: opacity 200ms ease;
+}
+
+/* The row order field is a comma separated list, so give it room and keep it on one line. */
+#RekoConfigPage #RailOrder {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+}
