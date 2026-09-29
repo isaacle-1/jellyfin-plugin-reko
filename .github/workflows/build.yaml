@@ -49,6 +49,13 @@ jobs:
       - name: "Check the client modules"
         run: "node tools/check-client.mjs"
 
+      # The TMDB model tests decode real response bodies against the real models. They exist because
+      # every TMDB type in this plugin is a hand-written transcription of a JSON response, and a
+      # transcription that is wrong in shape compiles, deploys, and passes every other check here —
+      # it fails at runtime, on one endpoint, for whoever has that title in their hero.
+      - name: "Test"
+        run: "dotnet test Jellyfin.Plugin.Reko.sln -c Release --no-restore"
+
       - name: "Build"
         run: "dotnet build Jellyfin.Plugin.Reko.sln -c Release --no-restore"
 

@@ -191,12 +191,38 @@ function makeMovieDetail(id) {
                 }
             }
         },
+        // These shapes are transcribed from TMDB, not invented. `release_dates.results` and
+        // `content_ratings.results` are ARRAYS of per-country entries, not objects keyed by country
+        // code; getting that wrong here once is what let a model with the same mistake ship, because
+        // a fake written from a fake proves nothing about the real thing. `watch/providers` really is
+        // keyed by region, which is the trap in the other direction.
         release_dates: {
-            results: {
-                US: { iso_3166_1: 'US', certification: id % 4 === 0 ? 'R' : 'PG-13' }
-            }
-        },
-        keywords: { id, page: 1, results: [{ id: 100 + id, name: 'time loop' }], total_pages: 1, total_results: 1 }
+            id,
+            results: [
+                {
+                    iso_3166_1: 'US',
+                    release_dates: [
+                        {
+                            certification: '',
+                            descriptors: [],
+                            iso_639_1: '',
+                            note: 'Mock Film Festival',
+                            release_date: '2019-01-02T00:00:00.000Z',
+                            type: 1
+                        },
+                        {
+                            certification: id % 4 === 0 ? 'R' : 'PG-13',
+                            descriptors: [],
+                            iso_639_1: '',
+                            note: '',
+                            release_date: '2019-03-15T00:00:00.000Z',
+                            type: 3
+                        }
+                    ]
+                },
+                { iso_3166_1: 'GB', release_dates: [{ certification: '12', note: '', type: 3 }] }
+            ]
+        }
     };
 }
 
@@ -267,8 +293,14 @@ function makeSeriesDetail(id) {
                 }
             }
         },
-        content_ratings: { id, results: { US: { iso_3166_1: 'US', rating: 'TV-MA' } } },
-        results: { id, page: 1, results: [{ id: 200 + id, name: 'ensemble cast' }], total_pages: 1, total_results: 1 }
+        // An array of per-country entries, as TMDB returns it. See the note on release_dates.
+        content_ratings: {
+            id,
+            results: [
+                { descriptors: [], iso_3166_1: 'US', rating: 'TV-MA' },
+                { descriptors: [], iso_3166_1: 'GB', rating: '12' }
+            ]
+        }
     };
 }
 

@@ -167,13 +167,27 @@ tools/set-manifest-release.py <version> <md5>    manifest.json -> sourceUrl and 
 
 ## Testing
 
-`tools/check-client.mjs` runs every module against a DOM shim with real selector matching, because
-`inject.js` is nothing but selector matching and a stub that answers `null` to everything cannot tell
-a working injector from a broken one. It covers both layouts' markup, the router's URL grammar, and
-the ranked card's structure.
+Three layers, each for a different way a thing can be wrong without looking wrong.
 
-`tools/mock-services.js` serves a fake TMDB and a fake Seerr, so the whole plugin can be exercised
-end to end on a real Jellyfin 12.1 with no credentials and no outbound network.
+**`Jellyfin.Plugin.Reko.Tests`** — the TMDB models, asserted against TMDB's own published response
+bodies, plus the cache's behaviour when callers come and go. This layer exists because every TMDB
+type in the plugin is a hand-written transcription of a JSON response. A transcription that is wrong
+in shape compiles, deploys, passes the build, and fails at runtime on one endpoint for whoever has
+that title in their hero. `release_dates` and `content_ratings` were both modelled as a map keyed by
+country code when TMDB returns an array of per-country entries, and that shipped — because the fake
+TMDB below had been written from the same misreading. A fake agreeing with a fake is not a test.
+
+`watch/providers` *is* keyed by country, and is asserted as a map, precisely so that a future
+"consistency" fix does not make it wrong in the other direction.
+
+**`tools/check-client.mjs`** runs every browser module against a DOM shim with real selector
+matching, because `inject.js` is nothing but selector matching and a stub that answers `null` to
+everything cannot tell a working injector from a broken one. It covers both layouts' markup, the
+router's URL grammar, and the ranked card's structure.
+
+**`tools/mock-services.js`** serves a fake TMDB and a fake Seerr, so the whole plugin can be exercised
+end to end on a real Jellyfin 12.1 with no credentials and no outbound network. Its response shapes
+are transcribed from TMDB rather than invented — see the note above.
 
 ```bash
 node tools/mock-services.js &        # a fake TMDB and Seerr on :8099

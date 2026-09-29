@@ -21,6 +21,7 @@ using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.Reko.Api;
@@ -41,7 +42,7 @@ namespace Jellyfin.Plugin.Reko.Api;
 [ApiController]
 [Route("Reko")]
 [Produces(MediaTypeNames.Application.Json)]
-public class RekoController : ControllerBase
+public class RekoController : ControllerBase, IExceptionFilter
 {
     private const string ResourcePrefix = "Jellyfin.Plugin.Reko.";
 
@@ -258,6 +259,30 @@ public class RekoController : ControllerBase
             .ConfigureAwait(false);
 
         return payload is null ? NotFound() : payload;
+    }
+
+    /// <summary>
+    /// Swallows a cancellation so that a person closing the tab is not logged as a server error.
+    /// </summary>
+    /// <param name="context">The exception context.</param>
+    /// <remarks>
+    /// The default behaviour turns an <see cref="OperationCanceledException"/> into a 500 and a full
+    /// stack trace, with a second copy from the outer middleware. That is the wrong shape for a
+    /// request nobody is waiting for any more: it is noise, and on a tab that is rebuilt on every
+    /// navigation it buries the failures that do matter. 499 is nginx's "client closed request", and
+    /// says the same thing without pretending the server did anything wrong.
+    /// </remarks>
+    public void OnException(ExceptionContext context)
+    {
+        if (context.Exception is not OperationCanceledException
+            || !context.HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _logger.LogDebug("A Reko request was abandoned by the client: {Path}", context.HttpContext.Request.Path);
+        context.Result = new StatusCodeResult(StatusCodes.Status499ClientClosedRequest);
+        context.ExceptionHandled = true;
     }
 
     /// <summary>

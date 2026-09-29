@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Deliberately not a Jellyfin plugin project: this is a test project, and it must never be picked
+    up by the release pipeline's single-DLL assumption or by the plugin loader's assembly scan.
+
+    It exists for one reason. Every TMDB model in the plugin is a hand-written transcription of a JSON
+    response, and a transcription that is wrong in shape does not fail to compile, does not fail to
+    deploy, and does not fail the client tests — it fails at runtime, on one endpoint, for whoever
+    has that title in their hero. Modelling `release_dates.results` as a map instead of an array
+    deserialised nothing and took out every movie title page and every movie hero at once, and the
+    only reason it reached a release is that the fake TMDB in tools/mock-services.js was written from
+    the same misreading.
+
+    So: real response bodies, taken from TMDB's own published examples, asserted against the real
+    models. If TMDB's shape and Reko's model ever disagree again, this fails in CI instead of in
+    somebody's log.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Jellyfin.Plugin.Reko.Tests</RootNamespace>
+    <AssemblyName>Jellyfin.Plugin.Reko.Tests</AssemblyName>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- StyleCop and the analyzer battery are configured for the plugin and would fight the test
+         naming conventions; the tests are held to the same standard by being simple. -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <NoWarn>$(NoWarn);SA0001;CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jellyfin.Plugin.Reko\Jellyfin.Plugin.Reko.csproj" />
+  </ItemGroup>
+
+</Project>

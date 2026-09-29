@@ -14,6 +14,16 @@ namespace Jellyfin.Plugin.Reko.Services;
 public sealed class TtlCache<TKey, TValue>
     where TKey : notnull
 {
+    /// <summary>
+    /// How long a single production may run before it is abandoned.
+    /// </summary>
+    /// <remarks>
+    /// A production is shared work, so it cannot be tied to the request that happened to trigger it.
+    /// It does still need a ceiling: without one, a hung upstream call holds its slot for the whole
+    /// TTL and every later caller waits on it too.
+    /// </remarks>
+    private static readonly TimeSpan ProductionTimeout = TimeSpan.FromSeconds(45);
+
     private readonly Dictionary<TKey, Entry> _entries = new();
     private readonly Lock _gate = new();
     private readonly TimeProvider _timeProvider;
@@ -49,7 +59,10 @@ public sealed class TtlCache<TKey, TValue>
     /// <param name="key">The cache key.</param>
     /// <param name="ttl">How long a produced value stays fresh.</param>
     /// <param name="factory">Produces the value on a miss.</param>
-    /// <param name="cancellationToken">Token used to abandon the wait.</param>
+    /// <param name="cancellationToken">
+    /// Token for abandoning this caller's wait. It does not cancel the shared production, because the
+    /// caller that missed is not the only one waiting and the value is still worth producing.
+    /// </param>
     /// <returns>The cached or freshly produced value.</returns>
     public async Task<TValue> GetOrAddAsync(
         TKey key,
@@ -58,7 +71,6 @@ public sealed class TtlCache<TKey, TValue>
         CancellationToken cancellationToken)
     {
         Task<TValue> task;
-        bool isOwner;
         TaskCompletionSource<TValue>? completion = null;
 
         // The lock only guards dictionary access. Nothing is awaited, and the factory is never
@@ -70,14 +82,12 @@ public sealed class TtlCache<TKey, TValue>
             if (_entries.TryGetValue(key, out var existing))
             {
                 task = existing.Task;
-                isOwner = false;
             }
             else
             {
                 completion = new TaskCompletionSource<TValue>(TaskCreationOptions.RunContinuationsAsynchronously);
                 task = completion.Task;
                 _entries[key] = new Entry(task, _timeProvider.GetUtcNow() + ttl);
-                isOwner = true;
             }
         }
 
@@ -85,24 +95,10 @@ public sealed class TtlCache<TKey, TValue>
         {
             // Hop to the pool so the factory runs with no lock held.
             var pending = completion;
-            _ = Task.Run(() => ProduceAsync(pending, factory, cancellationToken), CancellationToken.None);
+            _ = Task.Run(() => ProduceAsync(this, key, pending, factory), CancellationToken.None);
         }
 
-        try
-        {
-            return await task.ConfigureAwait(false);
-        }
-        catch (Exception)
-        {
-            // A failed refresh must not be cached, or one transient outage would poison the entry
-            // until the TTL expires. Only the caller that created the entry may evict it.
-            if (isOwner)
-            {
-                Evict(key, task);
-            }
-
-            throw;
-        }
+        return await task.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -158,21 +154,35 @@ public sealed class TtlCache<TKey, TValue>
     }
 
     private static async Task ProduceAsync(
+        TtlCache<TKey, TValue> cache,
+        TKey key,
         TaskCompletionSource<TValue> completion,
-        Func<CancellationToken, Task<TValue>> factory,
-        CancellationToken cancellationToken)
+        Func<CancellationToken, Task<TValue>> factory)
     {
+        // The cache's own timeout, not any caller's request token. Tying production to the request
+        // that happened to miss means every caller after the first inherits that request's lifetime:
+        // when it ends, the shared work is cancelled, the entry is evicted as a failure, and the next
+        // caller starts the whole thing again. A rail that fails to parse then re-fetches on every
+        // rebuild instead of once, which is how one bad response becomes a thousand upstream calls.
+        using var timeout = new CancellationTokenSource(ProductionTimeout);
+
         try
         {
-            completion.SetResult(await factory(cancellationToken).ConfigureAwait(false));
+            completion.SetResult(await factory(timeout.Token).ConfigureAwait(false));
         }
         catch (OperationCanceledException)
         {
-            completion.SetCanceled(cancellationToken);
+            completion.SetCanceled();
+            cache.Evict(key, completion.Task);
         }
         catch (Exception ex)
         {
             completion.SetException(ex);
+
+            // A failed refresh must not be cached, or one transient outage would poison the entry
+            // until the TTL expires. Evicted here rather than by a waiter, because every waiter may
+            // already have given up.
+            cache.Evict(key, completion.Task);
         }
     }
 

@@ -569,20 +569,6 @@ public sealed class TmdbCollectionDetail
 }
 
 /// <summary>
-/// A keyword entry. TMDB returns these under <c>keywords</c> for movies and <c>results</c> for TV.
-/// </summary>
-public sealed class TmdbKeyword
-{
-    /// <summary>Gets or sets the keyword id.</summary>
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-
-    /// <summary>Gets or sets the keyword name.</summary>
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-}
-
-/// <summary>
 /// A movie detail object, including everything appended to it.
 /// </summary>
 public sealed class TmdbMovieDetail
@@ -694,30 +680,68 @@ public sealed class TmdbMovieDetail
     /// <summary>Gets or sets the appended release dates, used for certifications.</summary>
     [JsonPropertyName("release_dates")]
     public TmdbReleaseDates? ReleaseDates { get; set; }
-
-    /// <summary>Gets or sets the appended keywords.</summary>
-    [JsonPropertyName("keywords")]
-    public TmdbPage<TmdbKeyword>? Keywords { get; set; }
 }
 
 /// <summary>
 /// The <c>release_dates</c> object, used to resolve a certification for a region.
 /// </summary>
+/// <remarks>
+/// <c>results</c> is an array of per-country groups, each with its own array of dated releases — not a
+/// map keyed by country code. Modelling it as a map deserialises nothing and fails the entire
+/// response, which takes out every movie title page and every movie hero at once.
+/// </remarks>
 public sealed class TmdbReleaseDates
 {
-    /// <summary>Gets or sets the per-country result map.</summary>
+    /// <summary>Gets or sets the TMDB id.</summary>
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    /// <summary>Gets or sets the per-country release groups.</summary>
     [JsonPropertyName("results")]
-    public Dictionary<string, TmdbReleaseDateCountry> Results { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<TmdbReleaseDateCountry> Results { get; set; } = new();
 }
 
 /// <summary>
-/// The release entries for one country.
+/// The releases for one country.
 /// </summary>
 public sealed class TmdbReleaseDateCountry
 {
-    /// <summary>Gets or sets the certification string, for example <c>PG-13</c>.</summary>
+    /// <summary>Gets or sets the ISO 3166-1 country code, for example <c>US</c>.</summary>
+    [JsonPropertyName("iso_3166_1")]
+    public string? Country { get; set; }
+
+    /// <summary>Gets or sets the individual releases, in the order TMDB returns them.</summary>
+    [JsonPropertyName("release_dates")]
+    public List<TmdbReleaseDateEntry> ReleaseDates { get; set; } = new();
+}
+
+/// <summary>
+/// One dated release of a film, carrying the certification it was released under.
+/// </summary>
+public sealed class TmdbReleaseDateEntry
+{
+    /// <summary>Gets or sets the certification string, for example <c>PG-13</c>. Often empty.</summary>
     [JsonPropertyName("certification")]
     public string? Certification { get; set; }
+
+    /// <summary>Gets or sets the ISO 639-1 language code, or null.</summary>
+    [JsonPropertyName("iso_639_1")]
+    public string? Language { get; set; }
+
+    /// <summary>Gets or sets the note, for example a festival premiere.</summary>
+    [JsonPropertyName("note")]
+    public string? Note { get; set; }
+
+    /// <summary>Gets or sets the release date.</summary>
+    [JsonPropertyName("release_date")]
+    public DateTimeOffset? ReleaseDate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the release type: 1 premiere, 2 theatrical limited, 3 theatrical, 4 digital,
+    /// 5 physical, 6 TV.
+    /// </summary>
+    [JsonPropertyName("type")]
+    public int Type { get; set; }
 }
 
 /// <summary>
@@ -832,20 +856,21 @@ public sealed class TmdbSeriesDetail
     /// <summary>Gets or sets the appended content ratings, used for certifications.</summary>
     [JsonPropertyName("content_ratings")]
     public TmdbContentRatings? ContentRatings { get; set; }
-
-    /// <summary>Gets or sets the appended keywords, which TMDB returns under <c>results</c> for TV.</summary>
-    [JsonPropertyName("results")]
-    public TmdbPage<TmdbKeyword>? KeywordResults { get; set; }
 }
 
 /// <summary>
-/// The <c>content_ratings</c> object.
+/// The <c>content_ratings</c> object. The TV counterpart to <see cref="TmdbReleaseDates"/>, and an
+/// array for the same reason: TMDB keys each entry by an <c>iso_3166_1</c> field, not by a key.
 /// </summary>
 public sealed class TmdbContentRatings
 {
-    /// <summary>Gets or sets the per-country result map.</summary>
+    /// <summary>Gets or sets the TMDB id.</summary>
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    /// <summary>Gets or sets the per-country ratings.</summary>
     [JsonPropertyName("results")]
-    public Dictionary<string, TmdbContentRatingCountry> Results { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<TmdbContentRatingCountry> Results { get; set; } = new();
 }
 
 /// <summary>
@@ -853,6 +878,10 @@ public sealed class TmdbContentRatings
 /// </summary>
 public sealed class TmdbContentRatingCountry
 {
+    /// <summary>Gets or sets the ISO 3166-1 country code, for example <c>US</c>.</summary>
+    [JsonPropertyName("iso_3166_1")]
+    public string? Country { get; set; }
+
     /// <summary>Gets or sets the rating string, for example <c>TV-MA</c>.</summary>
     [JsonPropertyName("rating")]
     public string? Rating { get; set; }

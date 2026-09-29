@@ -237,7 +237,9 @@ public sealed class TmdbClient
     /// <returns>The movie detail.</returns>
     public Task<TmdbMovieDetail> GetMovieDetailAsync(int id, CancellationToken cancellationToken)
     {
-        const string Append = "credits,videos,images,recommendations,similar,release_dates,watch/providers,keywords";
+        // Every entry in this list is a separate upstream call TMDB makes on our behalf, so the list
+        // is only as long as the fields Reko actually reads. `keywords` was here and read by nothing.
+        const string Append = "credits,videos,images,recommendations,similar,release_dates,watch/providers";
         return GetAsync<TmdbMovieDetail>(
             string.Create(CultureInfo.InvariantCulture, $"movie/{id}?append_to_response={Append}&include_image_language={ImageLanguage}"),
             Ttl("detail", 720),
@@ -252,7 +254,8 @@ public sealed class TmdbClient
     /// <returns>The series detail.</returns>
     public Task<TmdbSeriesDetail> GetSeriesDetailAsync(int id, CancellationToken cancellationToken)
     {
-        const string Append = "aggregate_credits,videos,images,recommendations,similar,content_ratings,watch/providers,keywords";
+        // As above: only the appends Reko reads. `keywords` cost a call per title page for nothing.
+        const string Append = "aggregate_credits,videos,images,recommendations,similar,content_ratings,watch/providers";
         return GetAsync<TmdbSeriesDetail>(
             string.Create(CultureInfo.InvariantCulture, $"tv/{id}?append_to_response={Append}&include_image_language={ImageLanguage}"),
             Ttl("detail", 720),

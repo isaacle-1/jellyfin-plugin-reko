@@ -4,7 +4,41 @@ All notable changes to Reko are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Reko uses
 [semantic versioning](https://semver.org/spec/v2.0.0.html) on the four-part Jellyfin version.
 
-## [1.0.0] — unreleased
+## [1.0.1] — 2026-09-29
+
+Fixes the certifications on every movie and series, and the retry storm that was amplifying the
+failure. Found by a real server's log, not by the tests: the fake TMDB in `tools/mock-services.js`
+had been written from the same misreading of the API as the model, so a fake was agreeing with a
+fake and nothing disagreed with TMDB.
+
+### Fixed
+
+- **`release_dates` and `content_ratings` were decoded as the wrong shape.** Both were modelled as a
+  map keyed by country code. TMDB returns an *array* of per-country entries — for movies, each with
+  its own array of dated releases. Neither deserialised, and because the failure is in the whole
+  document rather than in one field, it took out every movie and series title page and every hero
+  built from a movie. Certifications were the visible symptom; the endpoint itself was failing.
+- **The certification lookup now skips uncertificated premieres.** TMDB lists every release of a film
+  in a country, and the earliest ones are routinely uncertificated festival screenings. Taking the
+  first entry rather than the first certificated one showed no rating for most films.
+- **Shared cache production is no longer bound to the request that triggered it.** The first caller
+  to miss a cache entry started the work under its own request token, so every later caller inherited
+  that request's lifetime. When it ended, the shared work was cancelled, the entry was evicted as a
+  failure, and the next caller started again — one unparseable response became a re-fetch on every
+  rebuild. Production now runs under its own timeout, and callers abandon only their own wait.
+- **A cancelled request returns 499 instead of a logged 500.** A person closing the tab was producing
+  two error entries with a full stack trace each. The rail builder no longer reports a cancellation as
+  an unexpected failure.
+- **Movie and series pages no longer request TMDB keywords.** They were appended to every title page
+  fetch, which is a separate upstream call each, and were read by nothing.
+
+### Added
+
+- `Jellyfin.Plugin.Reko.Tests`: the TMDB models are now asserted against TMDB's own published
+  response bodies, and the cache's behaviour when callers come and go is covered. Both run in CI.
+  `tools/mock-services.js` returns the real shapes too, with a comment explaining why that matters.
+
+## [1.0.0] — 2026-09-29
 
 Initial release.
 

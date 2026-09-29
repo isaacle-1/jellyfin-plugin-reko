@@ -2,7 +2,7 @@
 name: "Reko"
 guid: "b3f19d2c-7a41-4e58-9c06-1d5a8e3f2b47"
 imageUrl: "https://raw.githubusercontent.com/isaacle-1/jellyfin-plugin-reko/main/artwork/reko.png"
-version: "1.0.0.0"
+version: "1.0.1.0"
 targetAbi: "12.1.0.0"
 framework: "net10.0"
 overview: "A Netflix-style discovery tab for Jellyfin, backed by TMDB with requests via Overseerr/Jellyseerr"
@@ -23,9 +23,4 @@ owner: "isaacle-1"
 artifacts:
   - "Jellyfin.Plugin.Reko.dll"
 changelog: >
-  - Initial release.
-  - Reko tab beside Home and Favorites in both the Modern and Legacy/TV layouts.
-  - Rotating hero, horizontal rails, ranked Top 10, curated genre rails, hover previews.
-  - Instant search, title pages with seasons/episodes/cast/trailers/watch providers.
-  - Overseerr/Jellyseerr requests with season picker and live status.
-  - Personalised rows and continue watching from your Jellyfin playback history.
+  - See CHANGELOG.md.

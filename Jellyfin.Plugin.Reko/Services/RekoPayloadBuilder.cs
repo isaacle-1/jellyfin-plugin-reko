@@ -1161,6 +1161,13 @@ public sealed class RekoPayloadBuilder
         {
             return await operation().ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            // The person closed the tab or moved on. Nothing is wrong, and the caller has already
+            // gone: propagate so the request unwinds quietly, rather than logging a failure and
+            // building a half-finished page nobody is looking at any more.
+            throw;
+        }
         catch (TmdbException ex)
         {
             _logger.LogWarning("Reko rail {Rail} could not be built: {Reason}", what, ex.Message);

@@ -62,6 +62,9 @@ jobs:
       - name: "Restore"
         run: "dotnet restore Jellyfin.Plugin.Reko.sln"
 
+      - name: "Test"
+        run: "dotnet test Jellyfin.Plugin.Reko.sln -c Release --no-restore"
+
       - name: "Publish"
         run: |
           dotnet publish Jellyfin.Plugin.Reko/Jellyfin.Plugin.Reko.csproj \

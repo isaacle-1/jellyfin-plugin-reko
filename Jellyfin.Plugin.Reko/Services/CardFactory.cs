@@ -418,23 +418,7 @@ public sealed class CardFactory
     /// <param name="tvContentRatings">The TV content ratings, or null.</param>
     /// <returns>The certification, or null when the region is not listed.</returns>
     public string? ResolveCertification(TmdbReleaseDates? movieReleaseDates, TmdbContentRatings? tvContentRatings)
-    {
-        if (movieReleaseDates is not null
-            && movieReleaseDates.Results.TryGetValue(_region, out var movieCountry)
-            && !string.IsNullOrWhiteSpace(movieCountry.Certification))
-        {
-            return movieCountry.Certification;
-        }
-
-        if (tvContentRatings is not null
-            && tvContentRatings.Results.TryGetValue(_region, out var tvCountry)
-            && !string.IsNullOrWhiteSpace(tvCountry.Rating))
-        {
-            return tvCountry.Rating;
-        }
-
-        return null;
-    }
+        => CertificationResolver.Resolve(_region, movieReleaseDates, tvContentRatings);
 
     /// <summary>
     /// Picks the best YouTube trailer key.

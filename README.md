@@ -112,12 +112,18 @@ trace floods a shared console on every navigation.
 ## Building from source
 
 ```bash
+dotnet test Jellyfin.Plugin.Reko.sln -c Release
 dotnet build Jellyfin.Plugin.Reko.sln -c Release
 dotnet publish Jellyfin.Plugin.Reko/Jellyfin.Plugin.Reko.csproj -c Release -f net10.0
 ```
 
 The plugin is a single `Jellyfin.Plugin.Reko.dll`; the web client is embedded in it as resources and
 served by the plugin, so there is no npm build and no bundler.
+
+The tests exist because every TMDB type in the plugin is a hand-written transcription of a JSON
+response, and a transcription that is wrong in shape compiles, deploys, and passes the build. It fails
+at runtime, on one endpoint, for whoever has that title in their hero. So the models are asserted
+against TMDB's own published response bodies.
 
 The browser modules are plain ES modules, so the useful check is not "does it compile" but "do the
 modules still import and export what the code calls":
