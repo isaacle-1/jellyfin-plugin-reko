@@ -10,7 +10,9 @@
     "versions": [
       {
         "version": "1.0.0.0",
-        "changelog": "Initial release. Reko tab beside Home and Favorites in both the Modern and Legacy/TV layouts; rotating hero, horizontal rails, ranked Top 10 and curated genre rows; hover previews; instant search; title pages with seasons, episodes, cast, trailers and watch providers; Overseerr/Jellyseerr requests with a season picker and live status; personalised rows and continue watching from your own playback history."
+        "changelog": "Initial release. Reko tab beside Home and Favorites in both the Modern and Legacy/TV layouts; rotating hero, horizontal rails, ranked Top 10 and curated genre rows; hover previews; instant search; title pages with seasons, episodes, cast, trailers and watch providers; Overseerr/Jellyseerr requests with a season picker and live status; personalised rows and continue watching from your own playback history.",
+        "sourceUrl": "https://github.com/isaacle-1/jellyfin-plugin-reko/releases/download/v1.0.0.0/reko_1.0.0.0.zip",
+        "checksum": "e83683eb03c99a727fc68531cf1c443b"
       }
     ]
   }
