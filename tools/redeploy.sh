@@ -18,11 +18,17 @@ if ! command -v dotnet > /dev/null 2>&1; then
 fi
 
 echo "==> building"
+
+# The version comes from the manifest rather than from here. A pinned copy in a deploy script is a
+# papercut that eventually tests a build nobody ships.
+VERSION="$(python3 -c "import json; print(json.load(open('$REPO/manifest.json'))[0]['versions'][0]['version'])")"
+PLUGIN_DIR="$ROOT/data/plugins/Reko_$VERSION"
+
 rm -rf "$ARTIFACTS"
 dotnet publish "$REPO/Jellyfin.Plugin.Reko/Jellyfin.Plugin.Reko.csproj" \
   -c Release -f net10.0 --nologo \
   -p:PublishDir="$ARTIFACTS/" \
-  -p:Version=1.0.0.0 > /dev/null
+  -p:Version="$VERSION" > /dev/null
 
 echo "==> stopping server"
 pkill -f "$ROOT/server/jellyfin" 2> /dev/null || true
@@ -32,7 +38,10 @@ for _ in $(seq 1 20); do
 done
 sleep 1
 
-echo "==> installing plugin"
+echo "==> installing Reko $VERSION"
+# Every version's directory is cleared, not just this one's: an upgrade that leaves the old one
+# behind gives the server two copies of the same plugin.
+rm -rf "$ROOT"/data/plugins/Reko_*
 mkdir -p "$PLUGIN_DIR"
 cp "$ARTIFACTS/Jellyfin.Plugin.Reko.dll" "$PLUGIN_DIR/"
 

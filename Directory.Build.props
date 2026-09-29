@@ -1,7 +1,18 @@
 <Project>
+
+  <!--
+    The version is one value, set from the command line by whatever is producing a build — the
+    release workflow from the tag, tools/redeploy.sh from the manifest. It has to reach all three
+    properties because Jellyfin reads the *assembly* version to decide whether an installed plugin is
+    out of date. Pinning AssemblyVersion here while letting -p:Version override only Version means a
+    release of 1.0.1.0 reports itself as 1.0.0.0, installs over 1.0.0.0, and is then never seen as an
+    upgrade again.
+  -->
   <PropertyGroup>
-    <Version>1.0.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version Condition="'$(Version)' == ''">1.0.0.0</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
   </PropertyGroup>
+
 </Project>
