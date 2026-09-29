@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Point a version in manifest.json at its release asset.
 
-A Jellyfin repository manifest is only installable once each version entry names its own artifact.
-Jellyfin downloads the version's ``sourceUrl`` and verifies its ``checksum``, and it derives neither
-from the repository URL or the version number, so a manifest without them lists a plugin nobody can
-install.
+A Jellyfin repository manifest is only installable once each version entry is complete. Jellyfin
+downloads the version's ``sourceUrl`` and verifies its ``checksum``, and it derives neither from the
+repository URL or the version number, so a manifest without them lists a plugin nobody can install.
+It also filters the catalog by ``targetAbi``, so a version without one is not offered at all, and
+that failure is silent — indistinguishable from a repository that was never added.
 
 The checksum is an MD5 hex digest, which is what Jellyfin's ``PackageVersionInfo.Checksum`` holds and
 what the official repository's manifest carries. It cannot be known before the zip exists, so the
