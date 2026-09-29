@@ -103,12 +103,13 @@ jobs:
           fail_on_unmatched_files: false
           files: "reko_${{ steps.version.outputs.version }}.zip"
 
-      # A repository manifest is only installable once each version names its own artifact: Jellyfin
-      # downloads `sourceUrl` and verifies `checksum`, and derives neither from anything else. The
-      # checksum cannot be known until the zip exists, so gh-pages is published from here rather
-      # than by hand — a manifest edited by hand is a manifest that eventually names a checksum
-      # which does not match the release it points at, and that failure looks like a corrupt
-      # download rather than a wrong manifest.
+      # main:manifest.json is the source of truth and may describe versions that have no artifact
+      # yet; gh-pages:manifest.json is what Jellyfin reads, and carries only released ones, each with
+      # the sourceUrl and checksum that cannot be known before the zip exists. So the new version's
+      # metadata is copied across from main and only those two fields are added here.
+      #
+      # Reading gh-pages' own copy and appending to it, rather than rewriting it from main, is what
+      # keeps an unreleased version from being offered with no artifact behind it.
       - name: "Update the repository manifest"
         env:
           VERSION: "${{ steps.version.outputs.version }}"
@@ -117,13 +118,24 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main gh-pages
 
-          # Copied out before the checkout: gh-pages holds the manifest and nothing else, so
-          # switching to it replaces the working tree and takes the script being run with it.
+          # Both are read out of the object store: the checkout is on the tag, and gh-pages holds
+          # only the published manifest.
+          git show "origin/main:manifest.json" > "$RUNNER_TEMP/main-manifest.json"
+          mkdir -p published
+          if git show "origin/gh-pages:manifest.json" > published/manifest.json 2> /dev/null; then
+            echo "appending to the existing published manifest"
+          else
+            echo '[]' > published/manifest.json
+          fi
+
+          # Copied out before the checkout below, which replaces the working tree.
           cp -r tools "$RUNNER_TEMP/reko-tools"
+          python3 "$RUNNER_TEMP/reko-tools/set-manifest-release.py" publish \
+            "$VERSION" "$MD5" "$RUNNER_TEMP/main-manifest.json" published/manifest.json
 
-          git fetch origin gh-pages
           git checkout gh-pages
-          python3 "$RUNNER_TEMP/reko-tools/set-manifest-release.py" "$VERSION" "$MD5"
+          cp published/manifest.json manifest.json
           git commit -am "Publish Reko $VERSION"
           git push origin gh-pages
